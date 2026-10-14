@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout · VENDRO{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-4">
+    <p class="eyebrow mb-1" style="color:var(--flame)">Almost there</p>
+    <h1 class="h2 mb-1">Checkout</h1>
+    <p class="text-smoke small mb-4">Delivery address, coupon and payment — then you're done.</p>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <!-- saved addresses -->
+                {% if saved_addresses %}
+                <div class="card-v p-4 mb-4">
+                    <h2 class="h5 mb-3"><i class="bi bi-bookmark-star me-2" style="color:var(--flame)"></i>Use a saved
+                        address</h2>
+                    <select class="form-select" data-address-picker
+                        data-addresses='[{% for a in saved_addresses %}{"id":{{ a.id }},"full_name":"{{ a.full_name|escapejs }}","phone":"{{ a.phone|escapejs }}","line1":"{{ a.line1|escapejs }}","line2":"{{ a.line2|escapejs }}","city":"{{ a.city|escapejs }}","state":"{{ a.state|escapejs }}","postal_code":"{{ a.postal_code|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'>
+                        <option value="">— choose an address to autofill —</option>
+                        {% for a in saved_addresses %}
+                        <option value="{{ a.id }}">{{ a.full_name }} · {{ a.one_line }}{% if a.is_default %} (default){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- delivery address -->
+                <div class="card-v p-4 mb-4">
+                    <h2 class="h5 mb-3">Delivery address</h2>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label" for="{{ address_form.full_name.id_for_label }}">Full name
+                                *</label>
+                            {{ address_form.full_name }}
+                            {% if address_form.full_name.errors %}<div class="text-danger small mt-1">{{ address_form.full_name.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="{{ address_form.phone.id_for_label }}">Phone *</label>
+                            {{ address_form.phone }}
+                            {% if address_form.phone.errors %}<div class="text-danger small mt-1">{{ address_form.phone.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="{{ address_form.line1.id_for_label }}">Address line 1
+                                *</label>
+                            {{ address_form.line1 }}
+                            {% if address_form.line1.errors %}<div class="text-danger small mt-1">{{ address_form.line1.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="{{ address_form.line2.id_for_label }}">Address line 2</label>
+                            {{ address_form.line2 }}
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="{{ address_form.city.id_for_label }}">City *</label>
+                            {{ address_form.city }}
+                            {% if address_form.city.errors %}<div class="text-danger small mt-1">{{ address_form.city.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="{{ address_form.state.id_for_label }}">State *</label>
+                            {{ address_form.state }}
+                            {% if address_form.state.errors %}<div class="text-danger small mt-1">{{ address_form.state.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="{{ address_form.postal_code.id_for_label }}">ZIP *</label>
+                            {{ address_form.postal_code }}
+                            {% if address_form.postal_code.errors %}<div class="text-danger small mt-1">{{ address_form.postal_code.errors|striptags }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-3 mt-3">
+                        <label class="form-check small text-smoke mb-0">
+                            <input type="checkbox" name="save_address" class="form-check-input" checked> Save this
+                            address
+                        </label>
+                        <label class="form-check small text-smoke mb-0">
+                            <input type="checkbox" name="make_default" class="form-check-input"> Make default
+                        </label>
+                    </div>
+                </div>
+
+                <!-- payment -->
+                <div class="card-v p-4">
+                    <h2 class="h5 mb-3">Payment method</h2>
+                    <div class="d-flex flex-column gap-3">
+                        <label class="pay-card selected d-flex gap-3 p-3 rounded-3 mb-0"
+                            style="border:1px solid rgba(23,19,12,.15);cursor:pointer">
+                            <input type="radio" name="payment_method" value="online" checked data-payment-option
+                                class="form-check-input mt-1">
+                            <span>
+                                <span class="d-block fw-bold small">Pay online — Razorpay (Card / UPI / NetBanking)</span>
+                                <span class="d-block text-smoke" style="font-size:.75rem">
+                                    Secure Razorpay payment gateway. Supports all UPI apps (GPay, PhonePe, Paytm), cards, and net banking.
+                                </span>
+                            </span>
+                        </label>
+                        <label class="pay-card d-flex gap-3 p-3 rounded-3 mb-0"
+                            style="border:1px solid rgba(23,19,12,.15);cursor:pointer">
+                            <input type="radio" name="payment_method" value="cod" data-payment-option
+                                class="form-check-input mt-1">
+                            <span>
+                                <span class="d-block fw-bold small">Cash on delivery</span>
+                                <span class="d-block text-smoke" style="font-size:.75rem">
+                                    Pay in cash or card when your order arrives. Marked paid on delivery.
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-flame w-100 rounded-pill py-3 mt-4 fw-semibold">
+                    <i class="bi bi-lock me-2"></i>Place order — ${{ total }}
+                </button>
+            </form>
+        </div>
+
+            <!-- order summary -->
+            <div class="col-lg-4">
+                <div class="card-v p-4">
+                    <h2 class="h5 mb-3">Your order</h2>
+                    <div class="d-flex flex-column gap-2 mb-3" style="max-height:16rem;overflow:auto">
+                        {% for item in items %}
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="{{ item.product.display_image }}" alt="{{ item.product.title }}" class="thumb-sm">
+                            <div class="flex-grow-1" style="min-width:0">
+                                <p class="fw-semibold small mb-0 text-truncate">{{ item.product.title }}</p>
+                                <p class="text-smoke mb-0" style="font-size:.72rem">Qty {{ item.quantity }}</p>
+                            </div>
+                            <p class="fw-bold small mb-0">${{ item.line_total }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="divider mb-3"></div>
+
+                    <dl class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <dt class="text-smoke fw-normal small">Subtotal</dt>
+                            <dd class="fw-bold small mb-0">${{ subtotal }}</dd>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <dt class="text-smoke fw-normal small">Shipping</dt>
+                            <dd class="fw-bold small mb-0">{% if shipping == 0 %}<span
+                                    style="color:var(--moss)">Free</span>{% else %}${{ shipping }}{% endif %}</dd>
+                        </div>
+                        {% if discount > 0 %}
+                        <div class="d-flex justify-content-between mb-2" style="color:var(--moss)">
+                            <dt class="fw-normal small">Coupon {{ coupon.code }}</dt>
+                            <dd class="fw-bold small mb-0">−${{ discount }}</dd>
+                        </div>
+                        {% endif %}
+                        <div class="d-flex justify-content-between pt-2 border-top">
+                            <dt class="fw-bold small mb-0">Total</dt>
+                            <dd class="price mb-0" style="font-size:1.5rem">${{ total }}</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <!-- coupon -->
+                <div class="card-v p-4 mt-3">
+                    <h3 class="h6 mb-2"><i class="bi bi-ticket-perforated me-2" style="color:var(--flame)"></i>Coupon
+                        code</h3>
+                    {% if coupon %}
+                    <div class="d-flex align-items-center justify-content-between gap-2 rounded-3 px-3 py-2 mb-2"
+                        style="background:rgba(69,82,59,.1)">
+                        <span class="fw-bold small" style="color:var(--moss)">
+                            <i class="bi bi-check-circle me-1"></i>{{ coupon.code }} — {{ coupon.discount_percent }}%
+                            off
+                        </span>
+                        <form method="post" action="{% url 'orders:coupon_remove' %}" class="m-0">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-link text-smoke p-0" title="Remove coupon"><i
+                                    class="bi bi-x-lg"></i></button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <form method="post" action="{% url 'orders:coupon_apply' %}" class="d-flex gap-2">
+                        {% csrf_token %}
+                        {{ coupon_form.code }}
+                        <button class="btn btn-outline-ink rounded-pill px-3 flex-shrink-0">Apply</button>
+                    </form>
+                    {% endif %}
+                    {% if coupon_message and not coupon %}
+                    <p class="small fw-semibold mt-2 mb-0" style="color:var(--flame)">
+                        <i class="bi bi-exclamation-circle me-1"></i>{{ coupon_message }}
+                    </p>
+                    {% endif %}
+                    <p class="text-smoke mb-0 mt-2" style="font-size:.72rem">
+                        Try <b>WELCOME10</b> (10% off $50+) or <b>SAVE20</b> (20% off $150+).
+                    </p>
+                </div>
+            </div>
+        </div>
+</div>
+{% endblock %}

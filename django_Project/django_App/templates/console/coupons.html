@@ -1,0 +1,101 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Coupons &amp; offers · Admin Console{% endblock %}
+{% block nav_coupons %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+    <p class="eyebrow mb-1" style="color:var(--flame)">Promotions</p>
+    <h1 class="h2 mb-1">Coupons &amp; offers</h1>
+    <p class="text-smoke small mb-4">Create percentage discounts with minimum-order rules, usage caps and expiry dates.
+    </p>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card-v p-4">
+                <h2 class="h5 mb-3">{% if editing %}Edit — {{ editing.code }}{% else %}New coupon{% endif %}</h2>
+                {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        {% if field.name == "active" %}
+                        <label class="form-check small text-smoke mb-0">
+                            {{ field }} Coupon is active
+                        </label>
+                        {% else %}
+                        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% endif %}
+                        {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|striptags }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-dark rounded-pill px-4">{% if editing %}Save changes{% else %}Create coupon{% endif %}</button>
+                    {% if editing %}<a href="{% url 'console:coupons' %}" class="btn btn-link text-smoke small ms-2">Cancel editing</a>{% endif %}
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card-v flush table-scroll">
+                <table class="table-v">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Discount</th>
+                            <th>Min. order</th>
+                            <th>Usage</th>
+                            <th>Expires</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for coupon in coupons %}
+                        <tr>
+                            <td><code class="rounded px-2 py-1 fw-bold"
+                                    style="background:var(--ink);color:var(--paper)">{{ coupon.code }}</code></td>
+                            <td class="fw-bold" style="color:var(--flame)">{{ coupon.discount_percent }}%</td>
+                            <td class="text-smoke">${{ coupon.min_order }}</td>
+                            <td><b>{{ coupon.used_count }}</b><span class="text-smoke"> / {{ coupon.max_uses }}</span>
+                            </td>
+                            <td class="text-smoke">{{ coupon.expires_at|date:"M j, Y"|default:"—" }}</td>
+                            <td><span
+                                    class="pill {% if coupon.is_valid %}pill-active{% else %}pill-inactive{% endif %}">
+                                    {% if coupon.is_valid %}Active{% elif coupon.is_expired %}Expired{% elif coupon.is_redeemed_out %}Redeemed out{% else %}Inactive{% endif %}
+                                </span></td>
+                            <td>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <form method="post" action="{% url 'console:coupon_toggle' coupon.pk %}"
+                                        class="m-0">
+                                        {% csrf_token %}
+                                        <button class="icon-btn"
+                                            title="{% if coupon.active %}Deactivate{% else %}Activate{% endif %}">
+                                            <i class="bi {% if coupon.active %}bi-toggle-on{% else %}bi-toggle-off{% endif %}"
+                                                {% if coupon.active %}style="color:var(--moss)" {% endif %}></i>
+                                        </button>
+                                    </form>
+                                    <a href="?edit={{ coupon.pk }}" class="icon-btn" title="Edit"><i
+                                            class="bi bi-pencil"></i></a>
+                                    <form method="post" action="{% url 'console:coupon_delete' coupon.pk %}" class="m-0"
+                                        data-confirm="Delete coupon {{ coupon.code }}?">
+                                        {% csrf_token %}
+                                        <button class="icon-btn" style="color:var(--flame)" title="Delete"><i
+                                                class="bi bi-trash3"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-smoke py-4">No coupons yet — create one on the left.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

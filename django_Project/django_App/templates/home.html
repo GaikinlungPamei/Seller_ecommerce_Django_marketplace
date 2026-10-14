@@ -1,0 +1,203 @@
+{% extends "base.html" %} {% load static %} {% block content %}
+<!-- ============================== HERO ============================== -->
+<section class="hero">
+    <div class="hero-blob a"></div>
+    <div class="hero-blob b"></div>
+    <div class="container-xxl py-5">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-7">
+                <p class="anim-rise pill pill-bare border px-3 py-2 mb-3 d-inline-flex" style="background: rgba(255, 255, 255, 0.6); border-color: rgba(23, 19, 12, 0.15) !important; color: var(--smoke); letter-spacing: 0.22em;">
+                    <i class="bi bi-stars me-2" style="color: var(--flame)"></i>
+                    Multi-vendor marketplace · live inventory
+                </p>
+                <h1 class="hero-title anim-rise anim-1">
+                    Objects<br />with <em>intent</em>.
+                </h1>
+                <p class="mt-3 mb-4 text-smoke anim-rise anim-2"
+                    style="max-width: 34rem; font-size: 1.02rem; line-height: 1.65">
+                    Curated goods from independent sellers — wired with smart carts,
+                    coupon offers, secure payments and door-to-door order tracking.
+                </p>
+                <div class="d-flex flex-wrap gap-2 anim-rise anim-3">
+                    <a href="{% url 'products:list' %}" class="btn btn-dark rounded-pill px-4 py-2">
+                        Shop the collection <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                    <a href="{% url 'accounts:register_role' 'seller' %}"
+                        class="btn btn-outline-ink rounded-pill px-4 py-2">
+                        Sell on DJGO. <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="d-flex gap-4 mt-4 pt-4 border-top anim-rise anim-3">
+                    <div>
+                        <p class="kpi-value mb-0">{{ stats.products }}+</p>
+                        <p class="eyebrow mb-0">Curated products</p>
+                    </div>
+                    <div>
+                        <p class="kpi-value mb-0">{{ stats.sellers }}</p>
+                        <p class="eyebrow mb-0">Verified sellers</p>
+                    </div>
+                    <div>
+                        <p class="kpi-value mb-0">{{ stats.rating|floatformat:1 }}★</p>
+                        <p class="eyebrow mb-0">Avg. rating</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5 d-none d-lg-block">
+                <div class="position-relative anim-rise anim-2">
+                    <div class="hero-media" style="aspect-ratio: 4/5">
+                        <img src="{% static 'images/headphones.jpg' %}" alt="Aria wireless headphones"
+                            style="width: 100%; height: 100%; object-fit: cover" />
+                    </div>
+                    <div class="hero-float">
+                        <img src="{% static 'images/watch.jpg' %}" alt="Pulse smart watch"
+                            style="width: 100%; aspect-ratio: 1; object-fit: cover" />
+                    </div>
+                    <div class="hero-tag">
+                        <p class="eyebrow mb-1" style="color: rgba(245, 241, 232, 0.5)">
+                            Today only
+                        </p>
+                        <p class="font-display fw-bold mb-1" style="color: var(--flame); font-size: 1.25rem">
+                            SAVE20
+                        </p>
+                        <p class="mb-0" style="font-size: 10px; color: rgba(245, 241, 232, 0.6)">
+                            20% off orders $150+
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ CATEGORIES ========================== -->
+<section class="container-xxl py-5">
+    <div class="d-flex align-items-end justify-content-between mb-3">
+        <h2 class="h3 mb-0">Shop by category</h2>
+        <a href="{% url 'products:list' %}" class="link-flame small">View all →</a>
+    </div>
+    <div class="row g-3">
+        {% for category in categories %}
+        <div class="col-sm-6 col-lg-3">
+            {% if forloop.first %}
+            <a href="{{ category.get_absolute_url|default:'#' }}"
+                class="card-v h-100 p-4 d-block position-relative overflow-hidden bg-ink" style="background: var(--ink); color: var(--paper); border-color: var(--ink);">
+                <p class="eyebrow mb-0" style="color: rgba(245, 241, 232, 0.5)">
+                    {{ category.n }} product{{ category.n|pluralize }}
+                </p>
+                <p class="font-display fw-semibold mt-4 mb-0" style="font-size: 1.4rem">
+                    {{ category.name }}
+                </p>
+                <i class="bi bi-arrow-up-right position-absolute"
+                    style="top: 1.25rem; right: 1.25rem; color: var(--flame)"></i>
+            </a>
+            {% else %}
+            <a href="{{ category.get_absolute_url|default:'#' }}"
+                class="card-v h-100 p-4 d-block position-relative overflow-hidden">
+                <p class="eyebrow mb-0">
+                    {{ category.n }} product{{ category.n|pluralize }}
+                </p>
+                <p class="font-display fw-semibold mt-4 mb-0" style="font-size: 1.4rem">
+                    {{ category.name }}
+                </p>
+                <i class="bi bi-arrow-up-right position-absolute"
+                    style="top: 1.25rem; right: 1.25rem; color: var(--smoke)"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-smoke">No categories yet.</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- ============================= PRODUCTS =========================== -->
+<section class="container-xxl py-4">
+    <div class="d-flex align-items-end justify-content-between mb-4">
+        <div>
+            <p class="eyebrow mb-1" style="color: var(--flame)">Fresh drops</p>
+            <h2 class="h2 mb-0">The Edit</h2>
+        </div>
+        <a href="{% url 'products:list' %}" class="link-flame small">Browse everything →</a>
+    </div>
+    <div class="row g-3">
+        {% for product in products %}
+        <div class="col-sm-6 col-lg-3">{% include "products/_card.html" %}</div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-smoke">No products published yet.</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- ============================== VALUES ============================ -->
+<section class="container-xxl py-5">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card-v p-4 h-100">
+                <span class="d-inline-flex rounded-3 p-2 mb-3"
+                    style="background: rgba(199, 72, 29, 0.1); color: var(--flame)"><i
+                        class="bi bi-shield-check fs-5"></i></span>
+                <h3 class="h5">Protected checkout</h3>
+                <p class="text-smoke small mb-0">
+                    Role-based access, secure sessions and online or cash-on-delivery
+                    payment on every order.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-v p-4 h-100">
+                <span class="d-inline-flex rounded-3 p-2 mb-3"
+                    style="background: rgba(199, 72, 29, 0.1); color: var(--flame)"><i
+                        class="bi bi-truck fs-5"></i></span>
+                <h3 class="h5">Live order tracking</h3>
+                <p class="text-smoke small mb-0">
+                    Follow every parcel from pending to delivered — with seller-managed
+                    status updates and email alerts.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-v p-4 h-100">
+                <span class="d-inline-flex rounded-3 p-2 mb-3"
+                    style="background: rgba(199, 72, 29, 0.1); color: var(--flame)"><i
+                        class="bi bi-graph-up-arrow fs-5"></i></span>
+                <h3 class="h5">Seller-grade tooling</h3>
+                <p class="text-smoke small mb-0">
+                    Sellers get revenue dashboards, low-stock alerts and a full order
+                    processing workflow.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ SELLER CTA ========================== -->
+<section class="position-relative overflow-hidden py-5 mt-4" style="background: var(--ink); color: var(--paper)">
+    <p class="outline-type position-absolute text-center w-100 mb-0" style="bottom: -2rem; opacity: 0.18">
+        SELL SELL SELL
+    </p>
+    <div class="container-xxl position-relative text-center py-5" style="max-width: 46rem">
+        <p class="eyebrow" style="color: var(--flame)">
+            For makers &amp; merchants
+        </p>
+        <h2 class="font-display fw-semibold" style="font-size: clamp(2rem, 5vw, 3rem); line-height: 1.05">
+            Open your shop.<br /><em class="fw-light">We handle the rails.</em>
+        </h2>
+        <p class="mx-auto mt-3 mb-4" style="
+        max-width: 34rem;
+        color: rgba(245, 241, 232, 0.6);
+        font-size: 0.92rem;
+        line-height: 1.6;">
+            Product &amp; inventory management, order processing, coupons, revenue
+            dashboards and low-stock alerts — everything you need to run a storefront.
+        </p>
+        <a href="{% url 'accounts:register_role' 'seller' %}" class="btn btn-flame rounded-pill px-4 py-2">
+            Become a seller <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+</section>
+{% endblock %}

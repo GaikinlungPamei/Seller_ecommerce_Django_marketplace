@@ -1,0 +1,331 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        {% block title %}Seller Studio · DJGO Marketplace{% endblock %}
+    </title>
+    <!-- Google Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,300;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+
+    <style>
+        /* Dedicated Seller Master Layout Theme */
+        body.seller-body {
+            background-color: #f7f6f2;
+            color: var(--ink);
+        }
+
+        .seller-topbar {
+            background: #14120e;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 0.75rem 0;
+            position: relative;
+            z-index: 1040;
+        }
+
+        .seller-topbar .dropdown-menu {
+            z-index: 1060;
+        }
+
+        .seller-nav-bar {
+            background: #1e1b16;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 0.6rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+        }
+
+        .seller-nav-item {
+            color: rgba(245, 241, 232, 0.75);
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 0.45rem 0.95rem;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .seller-nav-item:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .seller-nav-item.active {
+            color: #fff;
+            background: var(--flame);
+            border-color: var(--flame);
+            box-shadow: 0 2px 8px rgba(199, 72, 29, 0.35);
+        }
+
+        .seller-footer {
+            background: #14120e;
+            color: rgba(245, 241, 232, 0.6);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 1.5rem 0;
+            font-size: 0.8rem;
+        }
+
+        .workflow-step-num {
+            display: inline-block;
+            width: 1.25rem;
+            height: 1.25rem;
+            line-height: 1.25rem;
+            text-align: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            font-size: 0.65rem;
+            margin-right: 0.35rem;
+        }
+
+        .seller-nav-item.active .workflow-step-num {
+            background: rgba(0, 0, 0, 0.25);
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body class="seller-body d-flex flex-column min-vh-100">
+    <!-- ========================================================== -->
+    <!-- 1. SELLER STUDIO TOP BAR -->
+    <!-- ========================================================== -->
+    <header class="seller-topbar">
+        <div class="container-xxl d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <a class="navbar-brand text-white fw-bold fs-4 d-flex align-items-center mb-0" href="{% url 'seller:dashboard' %}">
+                    DJGO<span class="dot" style="color:var(--flame)">.</span>
+                </a>
+                <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis fw-bold px-2 py-1" style="font-size:0.75rem;letter-spacing:0.04em">
+                    <i class="bi bi-shop me-1"></i>SELLER STUDIO
+                </span>
+                {% if user.shop_name %}
+                <span class="text-white-50 d-none d-md-inline" style="font-size:0.85rem">
+                    <i class="bi bi-patch-check-fill text-warning me-1"></i>{{ user.shop_name }}
+                </span>
+                {% endif %}
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <!-- Storefront quick switch -->
+                <a href="{% url 'home' %}" target="_blank" class="btn btn-outline-light btn-sm rounded-pill px-3" title="Open Public Storefront">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>Live Store
+                </a>
+
+                <!-- Seller user dropdown -->
+                {% if user.is_authenticated %}
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-dark text-white rounded-pill px-3 py-1 dropdown-toggle d-flex align-items-center gap-2 border border-secondary"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="avatar bg-warning text-dark rounded-circle d-inline-flex align-items-center justify-content-center"
+                              style="width:1.6rem;height:1.6rem;font-size:0.75rem;font-weight:700">
+                            {{ user.display_name|first|upper }}
+                        </span>
+                        <span class="fw-semibold small d-none d-sm-inline">{{ user.shop_name|default:user.display_name|truncatechars:18 }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li class="dropdown-header">
+                            <span class="fw-bold d-block text-dark">{{ user.display_name }}</span>
+                            <span class="text-muted small">{{ user.email }}</span>
+                        </li>
+                        <li>
+                            <span class="dropdown-item-text">
+                                {% if user.is_approved_seller %}
+                                <span class="badge bg-success-subtle text-success rounded-pill">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Approved Seller
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">
+                                    <i class="bi bi-clock-history me-1"></i>Awaiting Approval
+                                </span>
+                                {% endif %}
+                            </span>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'seller:dashboard' %}">
+                                <i class="bi bi-speedometer2 me-2"></i>Seller Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'products:seller_list' %}">
+                                <i class="bi bi-boxes me-2"></i>Inventory &amp; Stock
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'seller:orders' %}">
+                                <i class="bi bi-bag-check me-2"></i>Customer Orders
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'accounts:profile' %}">
+                                <i class="bi bi-person-gear me-2"></i>Shop Profile &amp; Settings
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'accounts:logout' %}">
+                                <i class="bi bi-box-arrow-right me-2"></i>Sign out
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================================== -->
+    <!-- 2. SELLER WORKFLOW NAVIGATION RIBBON -->
+    <!-- Workflow: Dashboard → Inventory & Stock → Add Product → Customer Orders → Sales & Revenue → Reviews → Shop Profile -->
+    <!-- ========================================================== -->
+    <nav class="seller-nav-bar">
+        <div class="container-xxl">
+            <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1" style="scrollbar-width: thin;">
+                <!-- Step 1: Dashboard -->
+                <a href="{% url 'seller:dashboard' %}"
+                   class="seller-nav-item {% block nav_dashboard %}{% if active == 'dashboard' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                </a>
+
+                <!-- Step 2: Manage Stock & Inventory -->
+                <a href="{% url 'products:seller_list' %}"
+                   class="seller-nav-item {% block nav_products %}{% if active == 'products' %}active{% endif %}{% endblock %} position-relative">
+                    <i class="bi bi-boxes me-1"></i>Inventory &amp; Stock
+                    {% if seller_low_stock_count %}
+                    <span class="badge rounded-pill bg-warning text-dark ms-1" style="font-size:0.68rem" title="Low stock alerts">
+                        {{ seller_low_stock_count }}
+                    </span>
+                    {% endif %}
+                </a>
+
+                <!-- Step 3: Add Product -->
+                <a href="{% url 'products:seller_create' %}"
+                   class="seller-nav-item {% block nav_add_product %}{% if active == 'add_product' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-plus-circle me-1"></i>Add Product
+                </a>
+
+                <!-- Step 4: Customer Orders -->
+                <a href="{% url 'seller:orders' %}"
+                   class="seller-nav-item {% block nav_orders %}{% if active == 'orders' %}active{% endif %}{% endblock %} position-relative">
+                    <i class="bi bi-bag-check me-1"></i>Customer Orders
+                    {% if seller_pending_orders_count %}
+                    <span class="badge rounded-pill bg-danger text-white ms-1" style="font-size:0.68rem" title="Orders pending acceptance">
+                        {{ seller_pending_orders_count }}
+                    </span>
+                    {% endif %}
+                </a>
+
+                <!-- Step 5: Sales & Revenue -->
+                <a href="{% url 'seller:sales' %}"
+                   class="seller-nav-item {% block nav_sales %}{% if active == 'sales' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-graph-up-arrow me-1"></i>Sales &amp; Revenue
+                </a>
+
+                <!-- Step 6: Customer Reviews & Ratings -->
+                <a href="{% url 'seller:reviews' %}"
+                   class="seller-nav-item {% block nav_reviews %}{% if active == 'reviews' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-star me-1"></i>Reviews &amp; Ratings
+                </a>
+
+                <!-- Step 7: Shop Profile -->
+                <a href="{% url 'accounts:profile' %}"
+                   class="seller-nav-item {% block nav_profile %}{% if active == 'profile' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-person-gear me-1"></i>Shop Profile
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========================================================== -->
+    <!-- 3. MAIN WORKSPACE CONTENT -->
+    <!-- ========================================================== -->
+    <main class="flex-grow-1 pt-4 pb-5">
+        <!-- Admin Approval Notification Banner -->
+        {% if user.is_authenticated and user.is_seller and not user.is_approved_seller %}
+        <div class="container-xxl mb-4">
+            <div class="alert alert-warning d-flex align-items-center gap-3 shadow-sm border-warning" role="alert">
+                <i class="bi bi-clock-history fs-3 text-warning"></i>
+                <div class="flex-grow-1">
+                    <h6 class="alert-heading fw-bold mb-1">Seller Account Awaiting Admin Approval</h6>
+                    <p class="mb-0 small">
+                        Your store registration has been received! You can explore the Seller Studio and configure your shop profile.
+                        <strong>Publishing products to the public storefront unlocks immediately once an administrator approves your account.</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Low Stock Alert Banner (Global) -->
+        {% if seller_low_stock_count and active != 'products' %}
+        <div class="container-xxl mb-3">
+            <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center gap-2 py-2 px-3 small shadow-sm" role="alert" style="border-left: 4px solid var(--gold);">
+                <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                <div class="flex-grow-1">
+                    You have <strong>{{ seller_low_stock_count }} item{{ seller_low_stock_count|pluralize }}</strong> with low or depleted stock.
+                    <a href="{% url 'products:seller_list' %}?stock_status=low_stock" class="alert-link ms-1 fw-bold">Update Stock Now →</a>
+                </div>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Flash Messages & Alerts -->
+        {% if messages %}
+        <div class="container-xxl mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm" role="alert">
+                <i class="bi {% if message.tags == 'error' %}bi-exclamation-triangle{% elif message.tags == 'success' %}bi-check-circle{% else %}bi-info-circle{% endif %} fs-5"></i>
+                <div class="flex-grow-1">{{ message }}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ========================================================== -->
+    <!-- 4. DEDICATED SELLER FOOTER -->
+    <!-- ========================================================== -->
+    <footer class="seller-footer mt-auto">
+        <div class="container-xxl d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <span class="fw-bold text-white">DJGO Seller Studio</span> · Merchant Operations &amp; Inventory Management
+                {% if user.shop_name %}
+                <span class="text-white-50">({{ user.shop_name }})</span>
+                {% endif %}
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span>Account Status: <strong class="text-white">{% if user.is_approved_seller %}Approved{% else %}Pending Approval{% endif %}</strong></span>
+                <span>•</span>
+                <span><a href="{% url 'home' %}" target="_blank" class="text-white-50 text-decoration-none hover-white">View Live Store</a></span>
+                <span>•</span>
+                <span>© {% now "Y" %} DJGO</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

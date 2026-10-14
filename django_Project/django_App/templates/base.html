@@ -1,0 +1,216 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        {% block title %}DJGO - Smart E-commerce Marketplace {% endblock %}
+    </title>
+    <!-- Link Here -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,300;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+    <!-- announcement marquee -->
+    <!-- <div class="announce">
+        <div class="announce-track">
+            {% for i in "12" %}
+            <span>Free shipping over $150 <i>*</i> Code WELCOME10 — 10% off <i>*</i> Code SAVE20 — 20% off $150+ <i>*<i>
+                        Cash on delivery available <i>*</i> New sellers onboarding weekly <i>*</i></span>
+            {% endfor %}
+        </div>
+    </div> -->
+    <!-- ========================================================== -->
+    <!-- navbar button list-->
+    <nav class="navbar navbar-expand-lg site-nav sticky-top">
+        <div class="container-xxl">
+            <a class="navbar-brand" href="{% url 'home' %}">DJGO<span class="dot">.</span></a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"
+                aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="nav">
+                <ul class="navbar-nav me-auto ms-lg-3">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'products:list' %}">Shop</a></li>
+                    {% if user.is_authenticated %} {% if user.is_seller %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'seller:dashboard' %}"><i class="bi bi-shop"></i> Seller Studio</a>
+                    </li>
+                    {% endif %} {% if user.is_admin_role %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'console:dashboard' %}"><i class="bi bi-speedometer2"></i> Admin Console</a>
+                    </li>
+                    {% endif %} {% endif %}
+                </ul>
+
+                <form class="nav-search d-none d-sm-flex" action="{% url 'products:list' %}" method="get" role="search">
+                    <i class="bi bi-search"></i>
+                    <input type="search" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search products…"
+                        aria-label="Search products" />
+                </form>
+
+                <div class="d-flex align-items-center gap-1 ms-lg-3">
+                    {% if user.is_authenticated and user.is_customer or user.is_admin_role or user.is_superuser %}
+                    <a href="{% url 'orders:wishlist' %}" class="icon-btn position-relative" title="Wishlist" aria-label="Wishlist">
+                        <i class="bi bi-heart"></i>
+                        <span class="badge-dot" data-wishlist-count style="{% if not wishlist_count %}display:none;{% endif %}">{{ wishlist_count|default:0 }}</span>
+                    </a>
+                    <a href="{% url 'orders:cart' %}" class="icon-btn position-relative" title="Cart" aria-label="Cart">
+                        <i class="bi bi-bag"></i>
+                        {% if cart_count %}<span class="badge-dot">{{ cart_count }}</span>{% endif %}
+                    </a>
+                    {% endif %} {% if user.is_authenticated %}
+                    <div class="dropdown">
+                        <button class="user-chip dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="avatar">{{ user.display_name|first|upper }}</span>
+                            <span class="d-none d-lg-inline">{{ user.display_name|truncatechars:12 }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li class="dropdown-header">{{ user.email }}</li>
+                            <li>
+                                <span class="dropdown-item-text"><span class="pill pill-{{ user.role }}">{{ user.get_role_display }}</span>
+                                    <span class="pill pill-status-{{ user.status }} ms-1">{{ user.get_status_display }}</span></span>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider" />
+                            </li>
+                            {% if user.is_customer %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'orders:my_orders' %}"><i class="bi bi-box-seam"></i> My orders</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'orders:addresses' %}"><i class="bi bi-geo-alt"></i> Addresses</a>
+                            </li>
+                            {% endif %} {% if user.is_seller %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'seller:dashboard' %}"><i class="bi bi-graph-up"></i> Dashboard</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'products:seller_list' %}"><i class="bi bi-box"></i> My products</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'seller:orders' %}"><i class="bi bi-truck"></i> Customer orders</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'seller:sales' %}"><i class="bi bi-cash-stack"></i> Sales &amp;
+                                    revenue</a>
+                            </li>
+                            {% endif %} {% if user.is_admin_role %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'console:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'accounts:user_list' %}"><i class="bi bi-people"></i> Manage users</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'console:orders' %}"><i class="bi bi-receipt"></i> Manage orders</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'console:coupons' %}"><i class="bi bi-ticket-perforated"></i> Coupons</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'console:reports' %}"><i class="bi bi-bar-chart"></i> Sales reports</a>
+                            </li>
+                            {% endif %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="bi bi-person-gear"></i> Profile</a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider" />
+                            </li>
+                            <li>
+                                <form method="post" action="{% url 'accounts:logout' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="bi bi-box-arrow-right"></i> Log out
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                    {% else %}
+                    <a href="{% url 'accounts:login' %}" class="btn btn-dark btn-sm rounded-pill px-3">Sign in</a>
+                    <a href="{% url 'accounts:register' %}" class="btn btn-flame btn-sm rounded-pill px-3 d-none d-md-inline-flex">Register</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ======================================================== -->
+    <!-- main content -->
+    <main class="flex-grow-1">
+        <!-- django messages -->
+        {% if messages %}
+        <div class="container-xxl mt-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show d-flex align-items-center gap-2"
+                role="alert">
+                <i
+                    class="bi {% if message.tags == 'error' %}bi-exclamation-triangle{% elif message.tags == 'success' %}bi-check-circle{% else %}bi-info-circle{% endif %}"></i>
+                <div>{{ message }}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %} {% block content %}{% endblock %}
+    </main>
+    <!-- ======================================================== -->
+    <!-- footer -->
+    <footer class="site-footer mt-5">
+        <div class="container-xxl py-5">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <p class="footer-brand">DJGO <span class="dot">.</span></p>
+                    <p class="footer-copy">
+                        A smart multi-vendor e-commerce management system built with
+                        Django — role-based authentication, product &amp; inventory
+                        management, coupon offers, online and cash-on-delivery payments,
+                        live order tracking and sales reports.
+                    </p>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <p class="footer-title">Marketplace</p>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'products:list' %}">Browse products</a></li>
+                        <li>
+                            <a href="{% url 'accounts:register_role' 'seller' %}">Become a seller</a>
+                        </li>
+                        <li><a href="{% url 'orders:wishlist' %}">Wishlist</a></li>
+                        <li><a href="{% url 'orders:cart' %}">Cart</a></li>
+                    </ul>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <p class="footer-title">Account</p>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'orders:my_orders' %}">My orders</a></li>
+                        <li><a href="{% url 'accounts:profile' %}">Profile</a></li>
+                        <li><a href="{% url 'seller:dashboard' %}">Seller studio</a></li>
+                        <li><a href="{% url 'console:dashboard' %}">Admin console</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bar">
+            © {% now "Y" %} DJGO Marketplace — Django · PostgreSQL · Bootstrap 5
+        </div>
+    </footer>
+
+    <!-- =============================================================== -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

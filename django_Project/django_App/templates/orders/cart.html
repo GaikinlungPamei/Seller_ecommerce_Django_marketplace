@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Cart · VENDRO{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-4">
+    <p class="eyebrow mb-1" style="color:var(--flame)">Your bag</p>
+    <h1 class="h2 mb-1">Cart <span class="text-smoke">({{ items|length }})</span></h1>
+    <p class="text-smoke small mb-4">Adjust quantities or head to checkout.</p>
+
+    {% if items %}
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="d-flex flex-column gap-3">
+                {% for item in items %}
+                <div class="card-v p-3">
+                    <div class="d-flex gap-3">
+                        <a href="{{ item.product.get_absolute_url }}" class="flex-shrink-0" style="width:6.5rem">
+                            <img src="{{ item.product.display_image }}" alt="{{ item.product.title }}"
+                                class="w-100 rounded-3" style="aspect-ratio:1;object-fit:cover;background:var(--cream)">
+                        </a>
+                        <div class="flex-grow-1 d-flex flex-column">
+                            <div class="d-flex justify-content-between gap-3">
+                                <div>
+                                    <a href="{{ item.product.get_absolute_url }}" class="product-title">{{ item.product.title }}</a>
+                                    <p class="text-smoke small mb-1">${{ item.product.price }} each</p>
+                                    {% if item.product.is_low_stock %}
+                                    <span class="pill pill-low">{{ item.product.stock }} left in stock</span>
+                                    {% elif item.product.is_out_of_stock %}
+                                    <span class="pill pill-out">Sold out</span>
+                                    {% endif %}
+                                </div>
+                                <p class="price mb-0">${{ item.line_total }}</p>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between mt-auto pt-2">
+                                <form method="post" action="{% url 'orders:cart_update' item.pk %}" class="m-0">
+                                    {% csrf_token %}
+                                    <span class="qty-stepper">
+                                        <button type="submit" name="delta" value="-1" aria-label="Decrease quantity">
+                                            <i class="bi bi-dash"></i>
+                                        </button>
+                                        <span class="qty">{{ item.quantity }}</span>
+                                        <button type="submit" name="delta" value="1" aria-label="Increase quantity" {% if item.quantity >= item.product.stock %}disabled{% endif %}>
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </span>
+                                </form>
+
+                                <form method="post" action="{% url 'orders:cart_remove' item.pk %}" class="m-0"
+                                    data-confirm="Remove “{{ item.product.title }}” from your cart?">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-link text-smoke">
+                                        <i class="bi bi-trash3 me-1"></i>Remove
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card-v p-4">
+                <h2 class="h5 mb-3">Order summary</h2>
+                <dl class="mb-0">
+                    <div class="d-flex justify-content-between mb-2">
+                        <dt class="text-smoke fw-normal small">Subtotal</dt>
+                        <dd class="fw-bold mb-0">${{ subtotal }}</dd>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <dt class="text-smoke fw-normal small">Shipping</dt>
+                        <dd class="fw-bold mb-0">{% if shipping == 0 %}<span style="color:var(--moss)">Free</span>{% else %}${{ shipping }}{% endif %}</dd>
+                    </div>
+                    <div class="d-flex justify-content-between pt-2 border-top">
+                        <dt class="fw-bold small mb-0">Total (before coupons)</dt>
+                        <dd class="price mb-0" style="font-size:1.4rem">${{ total }}</dd>
+                    </div>
+                </dl>
+
+                {% if free_gap > 0 %}
+                <p class="small rounded-3 px-3 py-2 mt-3 mb-2" style="background:rgba(184,134,11,.1);color:var(--gold)">
+                    Add <b>${{ free_gap }}</b> more for free shipping.
+                </p>
+                {% endif %}
+                <p class="small text-smoke mb-3">Coupons <b>WELCOME10</b> &amp; <b>SAVE20</b> can be applied at
+                    checkout.</p>
+
+                <a href="{% url 'orders:checkout' %}" class="btn btn-flame w-100 rounded-pill py-2">
+                    Proceed to checkout <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+                <a href="{% url 'products:list' %}" class="btn btn-link w-100 text-smoke mt-2">Continue shopping</a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card-v empty-state">
+        <span class="icon"><i class="bi bi-bag"></i></span>
+        <h2 class="h4">Your cart is empty</h2>
+        <p class="text-smoke small mx-auto" style="max-width:26rem">
+            Beautiful objects are waiting. Browse the catalogue and add something you love.
+        </p>
+        <a href="{% url 'products:list' %}" class="btn btn-dark rounded-pill mt-3 px-4">Start shopping</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

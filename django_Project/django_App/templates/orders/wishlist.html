@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load rating_tags %}
+
+{% block title %}Wishlist · VENDRO{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-4">
+    <p class="eyebrow mb-1" style="color:var(--flame)">Saved for later</p>
+    <h1 class="h2 mb-1">Wishlist <span class="text-smoke">({{ items|length }})</span></h1>
+    <p class="text-smoke small mb-4">Tap the heart again to remove — or move items straight into your cart.</p>
+
+    {% if items %}
+    <div class="row g-3">
+        {% for entry in items %}
+        {% with product=entry.product %}
+        <div class="col-sm-6 col-lg-3">
+            <div class="product-card h-100">
+                <a href="{{ product.get_absolute_url }}" class="product-media">
+                    <img src="{{ product.display_image }}" alt="{{ product.title }}" loading="lazy">
+                </a>
+                <form method="post" action="{% url 'orders:wishlist_toggle' %}" data-wishlist
+                    style="position:absolute;top:.75rem;right:.75rem;margin:0">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="wish-btn on" aria-label="Remove from wishlist">
+                        <i class="bi bi-heart-fill"></i>
+                    </button>
+                </form>
+                <div class="product-body">
+                    {% if product.category %}<p class="eyebrow mb-1">{{ product.category.name }}</p>{% endif %}
+                    <a href="{{ product.get_absolute_url }}" class="product-title mb-1">{{ product.title }}</a>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        {% stars entry.avg_rating|default:product.rating_value %}
+                        <span class="small text-smoke">{% if entry.review_count %}({{ entry.review_count }}){% else %}No
+                            reviews{% endif %}</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between gap-2 mt-auto">
+                        <span class="price">${{ product.price }}</span>
+                        <form method="post" action="{% url 'orders:wishlist_move' entry.pk %}" class="m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-dark btn-sm rounded-pill px-3" {% if not product.is_in_stock or not product.is_active %}disabled{% endif %}>
+                                <i class="bi bi-bag-plus me-1"></i>
+                                {% if product.is_out_of_stock %}Sold out{% else %}Move to cart{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card-v empty-state">
+        <span class="icon"><i class="bi bi-heart"></i></span>
+        <h2 class="h4">Nothing saved yet</h2>
+        <p class="text-smoke small mx-auto" style="max-width:26rem">Use the heart on any product to keep it here for
+            later.</p>
+        <a href="{% url 'products:list' %}" class="btn btn-dark rounded-pill mt-3 px-4">Discover products</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

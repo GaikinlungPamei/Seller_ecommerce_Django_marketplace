@@ -1,0 +1,106 @@
+{% extends "base_admin.html" %}
+{% load rating_tags humanize %}
+
+{% block title %}Manage orders · Admin Console{% endblock %}
+{% block nav_orders %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+    <p class="eyebrow mb-1" style="color:var(--flame)">Payments &amp; fulfilment</p>
+    <h1 class="h2 mb-1">Orders <span class="text-smoke">({{ orders|length }})</span></h1>
+    <p class="text-smoke small mb-3">
+        Filtered value <b class="text-ink">${{ total_value|floatformat:2|intcomma }}</b> ·
+        online collected <b class="text-ink">${{ payments.online|floatformat:2 }}</b> ·
+        COD collected <b class="text-ink">${{ payments.cod|floatformat:2 }}</b> ·
+        COD due <b style="color:var(--gold)">${{ payments.cod_due|floatformat:2 }}</b> ·
+        refunded <b style="color:var(--flame)">${{ payments.refunded|floatformat:2 }}</b>
+    </p>
+
+    <form method="get" class="d-flex flex-wrap gap-2 mb-4">
+        <input type="search" name="q" value="{{ q }}" class="form-control form-control-sm rounded-pill"
+            placeholder="Search reference, customer, email…" style="width:18rem">
+        <select name="status" class="form-select form-select-sm rounded-pill" style="width:auto" data-auto-submit>
+            <option value="">All statuses</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="payment" class="form-select form-select-sm rounded-pill" style="width:auto" data-auto-submit>
+            <option value="">All payments</option>
+            <option value="online" {% if payment_filter == "online" %}selected{% endif %}>Online</option>
+            <option value="cod" {% if payment_filter == "cod" %}selected{% endif %}>Cash on delivery</option>
+        </select>
+        <button class="btn btn-sm btn-dark rounded-pill px-3">Filter</button>
+        {% if q or status_filter or payment_filter %}
+        <a href="{% url 'console:orders' %}" class="btn btn-sm btn-outline-ink rounded-pill px-3">Clear</a>
+        {% endif %}
+    </form>
+
+    <div class="card-v flush table-scroll">
+        <table class="table-v">
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Payment</th>
+                    <th>Coupon</th>
+                    <th>Status</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>
+                        <p class="fw-bold mb-0">{{ order.reference }}</p>
+                        <p class="text-smoke mb-0" style="font-size:.7rem">{{ order.created_at|date:"M j, Y" }}</p>
+                    </td>
+                    <td>
+                        <p class="mb-0">{{ order.user.display_name }}</p>
+                        <p class="text-smoke mb-0" style="font-size:.7rem">{{ order.ship_city }}, {{ order.ship_state }}
+                        </p>
+                    </td>
+                    <td>{{ order.item_count }}</td>
+                    <td><span class="pill pill-{{ order.payment_status }}">{% if order.payment_method == "cod" %}COD{% else %}Online{% endif %} · {{ order.get_payment_status_display }}</span></td>
+                    <td class="text-smoke">
+                        {% if order.coupon %}<code>{{ order.coupon.code }}</code> −${{ order.discount }}{% else %}—{% endif %}
+                    </td>
+                    <td><span class="pill pill-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                    <td class="text-end fw-bold">${{ order.total }}</td>
+                    <td>
+                        <div class="d-flex justify-content-end gap-1">
+                            {% if order.is_open and order.next_status %}
+                            <form method="post" action="{% url 'console:order_advance' order.pk %}" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="{{ order.next_status }}">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button class="btn btn-sm btn-dark rounded-pill px-3 text-nowrap">
+                                    {{ labels|lookup:order.next_status }} <i
+                                        class="bi bi-arrow-right ms-1"></i></button>
+                            </form>
+                            {% endif %}
+                            {% if order.is_open %}
+                            <form method="post" action="{% url 'console:order_advance' order.pk %}" class="m-0"
+                                data-confirm="Cancel {{ order.reference }}? Stock is restored and online payments refunded.">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="cancelled">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button class="btn btn-sm rounded-pill px-3"
+                                    style="border:1px solid rgba(199,72,29,.4);color:var(--flame)">Cancel</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center text-smoke py-4">No orders match these filters.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

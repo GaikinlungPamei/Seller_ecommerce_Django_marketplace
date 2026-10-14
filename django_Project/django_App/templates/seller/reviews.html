@@ -1,0 +1,165 @@
+{% extends "base_seller.html" %}
+{% load rating_tags humanize %}
+
+{% block title %}Customer Reviews &amp; Ratings · Seller Studio{% endblock %}
+{% block nav_reviews %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl pb-5">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+        <div>
+            <p class="eyebrow mb-1" style="color:var(--flame)">
+                <i class="bi bi-star-half me-1"></i>Feedback &amp; Reputation
+            </p>
+            <h1 class="h2 mb-1">Customer Reviews &amp; Ratings</h1>
+            <p class="text-smoke small mb-0">
+                Monitor feedback, ratings, and customer impressions across your entire product catalogue.
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'products:seller_list' %}" class="btn btn-outline-dark rounded-pill px-3">
+                <i class="bi bi-boxes me-1"></i>View Inventory
+            </a>
+        </div>
+    </div>
+
+    <!-- Rating Intelligence Summary Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Average Rating Score Card -->
+        <div class="col-lg-4 col-md-5">
+            <div class="card-v p-4 h-100 d-flex flex-column justify-content-center text-center shadow-sm">
+                <span class="eyebrow text-uppercase text-smoke mb-2">Overall Store Rating</span>
+                <div class="display-3 font-display fw-bold mb-2" style="color:var(--flame)">
+                    {{ avg_rating|default:"0.0" }}
+                </div>
+                <div class="d-flex justify-content-center gap-1 text-warning mb-2" style="font-size:1.3rem">
+                    {% for i in "12345" %}
+                        {% if forloop.counter <= avg_rating %}
+                            <i class="bi bi-star-fill"></i>
+                        {% elif forloop.counter <= avg_rating|add:"0.5" %}
+                            <i class="bi bi-star-half"></i>
+                        {% else %}
+                            <i class="bi bi-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <p class="text-smoke small mb-0">
+                    Based on <strong>{{ total_count }}</strong> verified customer review{{ total_count|pluralize }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Rating Star Breakdown Bars -->
+        <div class="col-lg-8 col-md-7">
+            <div class="card-v p-4 h-100 shadow-sm">
+                <h3 class="h6 fw-bold mb-3 text-dark">
+                    <i class="bi bi-bar-chart-steps me-1 text-warning"></i>Rating Distribution
+                </h3>
+                <div class="d-flex flex-column gap-2">
+                    {% for star, data in breakdown.items %}
+                    <div class="d-flex align-items-center gap-3">
+                        <a href="{% url 'seller:reviews' %}?rating={{ star }}" class="text-dark text-decoration-none fw-semibold small text-nowrap d-flex align-items-center gap-1 hover-flame" style="width:4.5rem">
+                            <span>{{ star }}</span>
+                            <i class="bi bi-star-fill text-warning"></i>
+                        </a>
+                        <div class="progress flex-grow-1" style="height:0.65rem; background-color:#e9e6df; border-radius:999px;">
+                            <div class="progress-bar" role="progressbar"
+                                 style="width: {{ data.pct }}%; background-color: var(--flame); border-radius:999px;"
+                                 aria-valuenow="{{ data.pct }}" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                        <span class="text-smoke small text-end" style="width:5rem">
+                            {{ data.count }} ({{ data.pct }}%)
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="card-v p-3 mb-4 shadow-sm">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" value="{{ q }}" class="form-control"
+                           placeholder="Search by product title, customer name, review keyword...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="rating" class="text-smoke small fw-bold mb-0 text-nowrap">Filter Rating:</label>
+                    <select id="rating" name="rating" class="form-select form-select-sm rounded-pill" data-auto-submit>
+                        <option value="">All Ratings</option>
+                        <option value="5" {% if rating_filter == '5' %}selected{% endif %}>5 Stars (★★★★★)</option>
+                        <option value="4" {% if rating_filter == '4' %}selected{% endif %}>4 Stars (★★★★☆)</option>
+                        <option value="3" {% if rating_filter == '3' %}selected{% endif %}>3 Stars (★★★☆☆)</option>
+                        <option value="2" {% if rating_filter == '2' %}selected{% endif %}>2 Stars (★★☆☆☆)</option>
+                        <option value="1" {% if rating_filter == '1' %}selected{% endif %}>1 Star (★☆☆☆☆)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2 d-flex justify-content-md-end gap-2">
+                <button type="submit" class="btn btn-sm btn-dark rounded-pill px-3">Filter</button>
+                {% if q or rating_filter %}
+                <a href="{% url 'seller:reviews' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Reset</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Reviews List -->
+    {% if reviews %}
+    <div class="d-flex flex-column gap-3">
+        {% for review in reviews %}
+        <article class="card-v p-4 shadow-sm">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-2 border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <img src="{{ review.product.display_image }}" alt="{{ review.product.title }}" class="thumb rounded-2 border" style="width:3rem;height:3rem;object-fit:cover">
+                    <div>
+                        <a href="{{ review.product.get_absolute_url }}" target="_blank" class="fw-bold text-dark text-decoration-none hover-flame d-block text-truncate" style="max-width:20rem">
+                            {{ review.product.title }}
+                        </a>
+                        <span class="text-smoke small">
+                            Reviewed by <strong>{{ review.user.display_name }}</strong> on {{ review.created_at|date:"M j, Y, g:i A" }}
+                        </span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-1 text-warning bg-light px-3 py-1 rounded-pill border">
+                    {% for i in "12345" %}
+                        {% if forloop.counter <= review.rating %}
+                            <i class="bi bi-star-fill"></i>
+                        {% else %}
+                            <i class="bi bi-star text-muted"></i>
+                        {% endif %}
+                    {% endfor %}
+                    <span class="ms-1 fw-bold text-dark small">{{ review.rating }}.0</span>
+                </div>
+            </div>
+            <p class="mb-0 text-dark" style="line-height:1.6;font-size:0.95rem">
+                “{{ review.comment }}”
+            </p>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card-v empty-state p-5 text-center shadow-sm">
+        <span class="icon fs-1 text-muted mb-3"><i class="bi bi-star"></i></span>
+        <h2 class="h4">No reviews found</h2>
+        <p class="text-smoke small mx-auto mb-3" style="max-width:28rem">
+            {% if q or rating_filter %}
+            No customer reviews matched your search query or rating filter. Try adjusting your filter settings.
+            <div class="mt-2">
+                <a href="{% url 'seller:reviews' %}" class="btn btn-sm btn-outline-dark rounded-pill px-3">View all reviews</a>
+            </div>
+            {% else %}
+            As customers purchase your products and leave reviews and ratings, their feedback will be shown here.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

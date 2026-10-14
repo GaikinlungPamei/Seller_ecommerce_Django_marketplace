@@ -1,0 +1,43 @@
+{# Dedicated header + navigation strictly for the Seller Studio #}
+<div class="container-xxl pt-4">
+    <div class="panel-head d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis fw-semibold px-2 py-1" style="font-size:0.72rem;letter-spacing:0.05em;text-transform:uppercase">
+                    <i class="bi bi-shop me-1"></i>Seller Studio
+                </span>
+                {% if user.shop_name %}
+                <span class="text-smoke small">{{ user.shop_name }}</span>
+                {% endif %}
+            </div>
+            <p class="font-display fw-semibold mb-0" style="font-size:1.5rem">
+                Welcome, {{ user.first_name|default:user.display_name }}
+            </p>
+        </div>
+        <nav class="studio-nav d-flex flex-wrap gap-2">
+            <a href="{% url 'seller:dashboard' %}" class="{% if active == 'dashboard' %}active{% endif %}">
+                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+            </a>
+            <a href="{% url 'products:seller_list' %}" class="{% if active == 'products' %}active{% endif %}">
+                <i class="bi bi-boxes me-1"></i>Products
+            </a>
+            <a href="{% url 'seller:orders' %}" class="{% if active == 'orders' %}active{% endif %}">
+                <i class="bi bi-bag me-1"></i>Orders
+            </a>
+            <a href="{% url 'seller:sales' %}" class="{% if active == 'sales' %}active{% endif %}">
+                <i class="bi bi-graph-up me-1"></i>Sales &amp; Revenue
+            </a>
+            <a href="{% url 'accounts:profile' %}" class="{% if active == 'profile' %}active{% endif %}">
+                <i class="bi bi-person-gear me-1"></i>Profile &amp; Shop
+            </a>
+        </nav>
+    </div>
+
+    {% if user.is_seller and not user.is_approved_seller %}
+    <div class="alert alert-warning d-flex align-items-center gap-2">
+        <i class="bi bi-clock-history"></i>
+        <div>Your seller account is <b>awaiting admin approval</b>. You can explore the studio —
+            product publishing unlocks once an administrator approves you.</div>
+    </div>
+    {% endif %}
+</div>

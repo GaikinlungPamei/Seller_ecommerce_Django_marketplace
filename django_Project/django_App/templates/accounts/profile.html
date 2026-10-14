@@ -1,0 +1,123 @@
+{% extends base_layout|default:"base.html" %}
+
+{% block title %}My Profile &amp; Settings · DJGO{% endblock %}
+{% block nav_profile %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-4">
+    <p class="eyebrow mb-1" style="color:var(--flame)">Account</p>
+    <h1 class="h2 mb-1">Manage profile</h1>
+    <p class="text-smoke small mb-4">Your details, role and password.</p>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card-v p-4">
+                <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+                    <span class="avatar" style="width:3rem;height:3rem;font-size:1.2rem">{{ user.display_name|first|upper }}</span>
+                    <div>
+                        <p class="fw-bold mb-0">{{ user.display_name }}</p>
+                        <p class="text-smoke small mb-1">{{ user.email }}</p>
+                        <span class="pill pill-{{ user.role }}">{{ user.get_role_display }}</span>
+                        <span class="pill pill-status-{{ user.status }} ms-1">{{ user.get_status_display }}</span>
+                    </div>
+                </div>
+
+                <h2 class="h5 mb-3">Profile details</h2>
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="save_profile" value="1">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label" for="{{ profile_form.first_name.id_for_label }}">First
+                                name</label>
+                            {{ profile_form.first_name }}
+                            {% if profile_form.first_name.errors %}<div class="text-danger small mt-1">{{ profile_form.first_name.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="{{ profile_form.last_name.id_for_label }}">Last name</label>
+                            {{ profile_form.last_name }}
+                            {% if profile_form.last_name.errors %}<div class="text-danger small mt-1">{{ profile_form.last_name.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="{{ profile_form.email.id_for_label }}">Email</label>
+                            {{ profile_form.email }}
+                            {% if profile_form.email.errors %}<div class="text-danger small mt-1">{{ profile_form.email.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="{{ profile_form.phone.id_for_label }}">Phone</label>
+                            {{ profile_form.phone }}
+                            {% if profile_form.phone.errors %}<div class="text-danger small mt-1">{{ profile_form.phone.errors|striptags }}</div>{% endif %}
+                        </div>
+                        {% if profile_form.shop_name %}
+                        <div class="col-12">
+                            <label class="form-label" for="{{ profile_form.shop_name.id_for_label }}">Shop name</label>
+                            {{ profile_form.shop_name }}
+                            {% if profile_form.shop_name.errors %}<div class="text-danger small mt-1">{{ profile_form.shop_name.errors|striptags }}</div>{% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-dark rounded-pill px-4 mt-4">Save profile</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card-v p-4 mb-4">
+                <h2 class="h5 mb-3">Reset password</h2>
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="change_password" value="1">
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ password_form.old_password.id_for_label }}">Current
+                            password</label>
+                        {{ password_form.old_password }}
+                        {% if password_form.old_password.errors %}<div class="text-danger small mt-1">{{ password_form.old_password.errors|striptags }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ password_form.new_password1.id_for_label }}">New
+                            password</label>
+                        {{ password_form.new_password1 }}
+                        {% if password_form.new_password1.errors %}<div class="text-danger small mt-1">{{ password_form.new_password1.errors|striptags }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ password_form.new_password2.id_for_label }}">Confirm new
+                            password</label>
+                        {{ password_form.new_password2 }}
+                        {% if password_form.new_password2.errors %}<div class="text-danger small mt-1">{{ password_form.new_password2.errors|striptags }}</div>{% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-outline-ink rounded-pill px-4">Change password</button>
+                </form>
+            </div>
+
+            <div class="card-v p-4">
+                <h2 class="h5 mb-3">Shortcuts</h2>
+                <div class="d-flex flex-column gap-2">
+                    {% if user.is_customer %}
+                    <a href="#" class="btn btn-outline-ink rounded-pill text-start">
+                        <i class="bi bi-box-seam me-2"></i>My orders ({{ order_count }})
+                    </a>
+                    <a href="#" class="btn btn-outline-ink rounded-pill text-start">
+                        <i class="bi bi-geo-alt me-2"></i>Delivery addresses
+                    </a>
+                    <a href="#" class="btn btn-outline-ink rounded-pill text-start">
+                        <i class="bi bi-heart me-2"></i>Wishlist
+                    </a>
+                    {% endif %}
+                    {% if user.is_seller %}
+                    <a href="#" class="btn btn-outline-ink rounded-pill text-start"><i
+                            class="bi bi-graph-up me-2"></i>Seller dashboard</a>
+                    <a href="#" class="btn btn-outline-ink rounded-pill text-start"><i
+                            class="bi bi-box me-2"></i>My products</a>
+                    {% endif %}
+                    {% if user.is_admin_role %}
+                    <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-ink rounded-pill text-start"><i
+                            class="bi bi-speedometer2 me-2"></i>Admin dashboard</a>
+                    <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-ink rounded-pill text-start"><i
+                            class="bi bi-people me-2"></i>Manage users</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

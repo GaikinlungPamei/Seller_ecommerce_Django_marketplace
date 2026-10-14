@@ -1,0 +1,55 @@
+{% extends "base_admin.html" %}
+{% load rating_tags %}
+
+{% block title %}Moderate reviews · Admin Console{% endblock %}
+{% block nav_reviews %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+    <p class="eyebrow mb-1" style="color:var(--flame)">Community</p>
+    <h1 class="h2 mb-1">Reviews <span class="text-smoke">({{ reviews|length }})</span></h1>
+    <p class="text-smoke small mb-4">Moderate what customers publish across the marketplace.</p>
+
+    {% if reviews %}
+    <div class="row g-3">
+        {% for review in reviews %}
+        <div class="col-md-6">
+            <article class="card-v p-4 h-100">
+                <div class="d-flex align-items-start justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-2" style="min-width:0">
+                        <span class="avatar">{{ review.user.display_name|first|upper }}</span>
+                        <div style="min-width:0">
+                            <p class="fw-bold small mb-0">{{ review.user.display_name }}</p>
+                            <p class="text-smoke mb-0" style="font-size:.7rem">
+                                on {% if review.product %}
+                                <a href="{{ review.product.get_absolute_url }}" class="fw-semibold"
+                                    style="color:var(--flame)">{{ review.product.title }}</a>
+                                {% else %}a removed product{% endif %}
+                                · {{ review.created_at|date:"M j, Y" }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        {% stars review.rating %}
+                        <form method="post" action="{% url 'products:admin_review_delete' review.pk %}" class="m-0"
+                            data-confirm="Delete this review?">
+                            {% csrf_token %}
+                            <button class="icon-btn" style="color:var(--flame)" aria-label="Delete review"><i
+                                    class="bi bi-trash3"></i></button>
+                        </form>
+                    </div>
+                </div>
+                <p class="mt-3 mb-0 small" style="line-height:1.65">{{ review.comment }}</p>
+            </article>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card-v empty-state">
+        <span class="icon"><i class="bi bi-star"></i></span>
+        <h2 class="h4">No reviews yet</h2>
+        <p class="text-smoke small mb-0">Customer reviews will appear here for moderation.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

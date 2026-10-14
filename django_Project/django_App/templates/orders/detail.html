@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load rating_tags %}
+
+{% block title %}Track {{ order.reference }} · VENDRO{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-4" style="max-width:60rem">
+    <a href="{% url 'orders:my_orders' %}" class="link-flame small"><i class="bi bi-arrow-left me-1"></i>All orders</a>
+
+    <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mt-2 mb-4">
+        <div>
+            <p class="eyebrow mb-1" style="color:var(--flame)">Order tracking</p>
+            <h1 class="h2 mb-0">{{ order.reference }}</h1>
+            <p class="text-smoke small mb-0">Placed {{ order.created_at|date:"M j, Y · H:i" }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <span class="pill pill-{{ order.payment_status }}">{{ order.get_payment_status_display }}</span>
+            <span class="pill pill-{{ order.status }}">{{ order.get_status_display }}</span>
+        </div>
+    </div>
+
+    <!-- timeline -->
+    <div class="card-v p-4 mb-4">
+        <h2 class="h5 mb-3">Delivery progress</h2>
+        {% if order.status == "cancelled" %}
+        <p class="rounded-3 px-3 py-2 small fw-semibold mb-0 d-flex align-items-center gap-2"
+            style="background:rgba(199,72,29,.1);color:var(--flame)">
+            <i class="bi bi-x-circle"></i>
+            This order was cancelled.{% if order.payment_status == "refunded" %} Your payment has been refunded to the
+            original method.{% endif %}
+        </p>
+        {% else %}
+        <div class="tracker">
+            {% for step in steps %}
+            <div class="step {% if forloop.counter0 <= order.progress_index %}done{% endif %}">
+                <span class="dot-step">{% if forloop.counter0 <= order.progress_index %}<i class="bi bi-check-lg"></i>{% endif %}</span>
+                <span class="step-label">{{ labels|lookup:step }}</span>
+            </div>
+            {% if not forloop.last %}
+            <div class="line {% if forloop.counter0 < order.progress_index %}done{% endif %}"></div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if order.events.exists %}
+        <div class="divider my-4"></div>
+        <p class="eyebrow mb-2">Activity log</p>
+        <ul class="list-unstyled mb-0 small">
+            {% for event in order.events.all %}
+            <li class="d-flex gap-2 mb-2">
+                <i class="bi bi-dot" style="color:var(--flame)"></i>
+                <span class="text-smoke" style="min-width:9rem">{{ event.created_at|date:"M j, H:i" }}</span>
+                <span class="fw-semibold">{{ labels|lookup:event.status }}</span>
+                {% if event.note %}<span class="text-smoke">— {{ event.note }}</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card-v p-4">
+                <h2 class="h5 mb-3">Items</h2>
+                <div class="d-flex flex-column gap-2">
+                    {% for item in order.items.all %}
+                    <div class="d-flex align-items-center gap-3 rounded-3 p-2 bg-cream">
+                        <img src="{{ item.image }}" alt="{{ item.title }}" class="thumb">
+                        <div class="flex-grow-1" style="min-width:0">
+                            <a href="{% url 'products:detail' item.product_id %}"
+                                class="fw-semibold d-block text-truncate">{{ item.title }}</a>
+                            <span class="text-smoke small">${{ item.price }} × {{ item.quantity }}</span>
+                        </div>
+                        <span class="fw-bold">${{ item.line_total }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="divider my-3"></div>
+                <dl class="mb-0">
+                    <div class="d-flex justify-content-between mb-1">
+                        <dt class="text-smoke fw-normal small">Subtotal</dt>
+                        <dd class="small fw-bold mb-0">${{ order.subtotal }}</dd>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <dt class="text-smoke fw-normal small">Shipping</dt>
+                        <dd class="small fw-bold mb-0">{% if order.shipping == 0 %}Free{% else %}${{ order.shipping }}{% endif %}</dd>
+                    </div>
+                    {% if order.discount > 0 %}
+                    <div class="d-flex justify-content-between mb-1" style="color:var(--moss)">
+                        <dt class="fw-normal small">Coupon {{ order.coupon.code }}</dt>
+                        <dd class="small fw-bold mb-0">−${{ order.discount }}</dd>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex justify-content-between pt-2 border-top">
+                        <dt class="fw-bold small mb-0">Total</dt>
+                        <dd class="price mb-0" style="font-size:1.4rem">${{ order.total }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card-v p-4 mb-3">
+                <h2 class="h5 mb-2">Shipping to</h2>
+                <p class="small mb-1"><b>{{ order.ship_name }}</b></p>
+                <p class="text-smoke small mb-1">{{ order.ship_one_line }}</p>
+                <p class="text-smoke small mb-0"><i class="bi bi-telephone me-1"></i>{{ order.ship_phone }}</p>
+            </div>
+            <div class="card-v p-4">
+                <h2 class="h5 mb-2">Payment</h2>
+                <p class="small mb-1">{{ order.get_payment_method_display }} —
+                    <span class="pill pill-{{ order.payment_status }}">{{ order.get_payment_status_display }}</span>
+                </p>
+                {% if order.payment_ref %}<p class="text-smoke mb-0" style="font-size:.72rem">Reference:
+                    <code>{{ order.payment_ref }}</code></p>{% endif %}
+
+                {% if order.payment_method == "online" and order.payment_status == "pending" and order.is_open %}
+                <a href="{% url 'orders:razorpay_pay' order.pk %}" class="btn btn-flame w-100 rounded-pill mt-3 small py-2 fw-semibold">
+                    <i class="bi bi-credit-card me-1"></i>Complete Payment with Razorpay
+                </a>
+                {% endif %}
+            </div>
+            {% if order.is_cancellable %}
+            <form method="post" action="{% url 'orders:cancel' order.pk %}" class="mt-3"
+                data-confirm="Cancel order {{ order.reference }}? Stock will be restored.">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="btn w-100 rounded-pill"
+                    style="border:1px solid rgba(199,72,29,.4);color:var(--flame)">
+                    <i class="bi bi-x-circle me-1"></i>Cancel this order
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

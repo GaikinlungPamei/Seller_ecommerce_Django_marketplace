@@ -1,0 +1,169 @@
+{% extends "base_admin.html" %}
+
+{% block title %}
+{% if role_filter == 'admin' %}Manage Administrators{% elif role_filter == 'customer' %}Manage Customers{% elif role_filter == 'seller' and status_filter == 'pending' %}Approve Sellers{% elif role_filter == 'seller' %}Manage Sellers{% else %}Manage Users{% endif %} · Admin Console
+{% endblock %}
+
+{% block nav_users %}{% if status_filter != 'pending' %}active{% endif %}{% endblock %}
+{% block nav_approvals %}{% if status_filter == 'pending' %}active{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+    <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-4">
+        <div>
+            <p class="eyebrow mb-1" style="color:var(--flame)">Access control</p>
+            <h1 class="h2 mb-0">
+                {% if role_filter == 'admin' %}
+                    Administrators <span class="text-smoke">({{ users|length }})</span>
+                {% elif role_filter == 'customer' %}
+                    Customers <span class="text-smoke">({{ users|length }})</span>
+                {% elif role_filter == 'seller' %}
+                    Sellers <span class="text-smoke">({{ users|length }})</span>
+                {% else %}
+                    Directory <span class="text-smoke">({{ users|length }})</span>
+                {% endif %}
+            </h1>
+            <p class="text-smoke small mb-0">
+                Click on any individual customer or seller to inspect their detailed profile, order history, or store catalog.
+                {% if pending_count %}<b style="color:var(--gold)">{{ pending_count }} seller{{ pending_count|pluralize }} awaiting approval.</b>{% endif %}
+            </p>
+        </div>
+        <form method="get" class="d-flex gap-2">
+            {% if role_filter %}<input type="hidden" name="role" value="{{ role_filter }}">{% endif %}
+            {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+            <input type="search" name="q" value="{{ q }}" class="form-control form-control-sm rounded-pill"
+                placeholder="Search name, email, shop…" style="width:16rem">
+            <button class="btn btn-sm btn-dark rounded-pill px-3">Search</button>
+        </form>
+    </div>
+
+    <!-- Filter Pills -->
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a href="{% url 'accounts:user_list' %}" class="pill pill-bare border"
+            style="{% if not role_filter and not status_filter %}background:var(--ink);color:#fff;border-color:var(--ink){% else %}background:rgba(255,255,255,.6);border-color:rgba(23,19,12,.15);color:var(--smoke){% endif %}">
+            All Users ({{ total_users }})
+        </a>
+
+        <a href="{% url 'accounts:user_list' %}?role=admin" class="pill pill-bare border"
+            style="{% if role_filter == 'admin' and not status_filter %}background:#b91c1c;color:#fff;border-color:#b91c1c{% else %}background:rgba(255,255,255,.6);border-color:rgba(23,19,12,.15);color:#b91c1c{% endif %}">
+            <i class="bi bi-shield-lock-fill me-1"></i>Admins ({{ admin_count }})
+        </a>
+
+        <a href="{% url 'accounts:user_list' %}?role=customer" class="pill pill-bare border"
+            style="{% if role_filter == 'customer' and not status_filter %}background:var(--ink);color:#fff;border-color:var(--ink){% else %}background:rgba(255,255,255,.6);border-color:rgba(23,19,12,.15);color:var(--smoke){% endif %}">
+            <i class="bi bi-people me-1"></i>Customers ({{ customer_count }})
+        </a>
+
+        <a href="{% url 'accounts:user_list' %}?role=seller" class="pill pill-bare border"
+            style="{% if role_filter == 'seller' and not status_filter %}background:var(--ink);color:#fff;border-color:var(--ink){% else %}background:rgba(255,255,255,.6);border-color:rgba(23,19,12,.15);color:var(--smoke){% endif %}">
+            <i class="bi bi-shop me-1"></i>Sellers ({{ seller_count }})
+        </a>
+
+        <a href="{% url 'accounts:user_list' %}?role=seller&status=pending" class="pill pill-bare border"
+            style="{% if status_filter == 'pending' %}background:var(--gold);color:#fff;border-color:var(--gold){% else %}background:rgba(255,255,255,.6);border-color:rgba(23,19,12,.15);color:var(--gold){% endif %}">
+            <i class="bi bi-clock-history me-1"></i>Pending Approvals ({{ pending_count }})
+        </a>
+
+        <a href="{% url 'accounts:user_list' %}?status=blocked" class="pill pill-bare border"
+            style="{% if status_filter == 'blocked' %}background:var(--flame);color:#fff;border-color:var(--flame){% else %}background:rgba(255,255,255,.6);border-color:rgba(23,19,12,.15);color:var(--flame){% endif %}">
+            <i class="bi bi-slash-circle me-1"></i>Blocked Accounts ({{ blocked_count }})
+        </a>
+    </div>
+
+    <div class="card-v flush table-scroll">
+        <table class="table-v">
+            <thead>
+                <tr>
+                    <th>User / Account</th>
+                    <th>Role</th>
+                    <th>Shop Name</th>
+                    <th>Activity</th>
+                    <th>Joined Date</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>
+                        <a href="{% url 'accounts:user_detail' u.pk %}" class="d-flex align-items-center gap-2 text-decoration-none text-ink">
+                            <span class="avatar">{{ u.display_name|first|upper }}</span>
+                            <div>
+                                <p class="fw-semibold mb-0 text-ink">{{ u.display_name }}</p>
+                                <p class="text-smoke mb-0" style="font-size:.72rem">{{ u.email }}</p>
+                            </div>
+                        </a>
+                    </td>
+                    <td><span class="pill pill-{{ u.role }}">{{ u.get_role_display }}</span></td>
+                    <td>
+                        {% if u.is_seller and u.shop_name %}
+                            <a href="{% url 'accounts:user_detail' u.pk %}" class="text-decoration-none text-ink fw-semibold">
+                                <i class="bi bi-shop me-1 text-smoke"></i>{{ u.shop_name }}
+                            </a>
+                        {% else %}
+                            <span class="text-smoke">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.is_customer %}
+                            <span class="small">{{ u.order_count|default:"0" }} order{{ u.order_count|default:"0"|pluralize }}</span>
+                        {% elif u.is_seller %}
+                            <span class="small">{{ u.product_count|default:"0" }} product{{ u.product_count|default:"0"|pluralize }}</span>
+                        {% else %}
+                            <span class="text-smoke">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-smoke">{{ u.date_joined|date:"M j, Y" }}</td>
+                    <td><span class="pill pill-status-{{ u.status }}">{{ u.get_status_display }}</span></td>
+                    <td>
+                        <div class="d-flex justify-content-end align-items-center gap-1">
+                            <a href="{% url 'accounts:user_detail' u.pk %}" class="btn btn-sm btn-outline-ink rounded-pill px-2 py-1" title="View Profile">
+                                <i class="bi bi-person-lines-fill me-1"></i>Profile
+                            </a>
+
+                            {% if u.status == "pending" %}
+                            <form method="post" action="{% url 'accounts:set_user_status' u.pk 'active' %}" class="m-0">
+                                {% csrf_token %}
+                                <button class="btn btn-sm rounded-pill px-2 py-1 text-white" style="background:var(--moss)"
+                                    title="Approve seller">
+                                    <i class="bi bi-check-circle me-1"></i>Approve
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'accounts:set_user_status' u.pk 'blocked' %}" class="m-0"
+                                data-confirm="Reject and block {{ u.display_name }}?">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1"
+                                    title="Reject">Reject</button>
+                            </form>
+                            {% elif u.status == "active" and u != user %}
+                            <form method="post" action="{% url 'accounts:set_user_status' u.pk 'blocked' %}" class="m-0"
+                                data-confirm="Block {{ u.display_name }}? They will be signed out immediately.">
+                                {% csrf_token %}
+                                <button class="btn btn-sm rounded-pill px-2 py-1"
+                                    style="background:rgba(199,72,29,.12);color:var(--flame)" title="Block user">
+                                    <i class="bi bi-slash-circle me-1"></i>Block
+                                </button>
+                            </form>
+                            {% elif u.status == "blocked" %}
+                            <form method="post" action="{% url 'accounts:set_user_status' u.pk 'active' %}" class="m-0">
+                                {% csrf_token %}
+                                <button class="btn btn-sm rounded-pill px-2 py-1"
+                                    style="background:rgba(69,82,59,.15);color:var(--moss)" title="Unblock user">
+                                    <i class="bi bi-unlock me-1"></i>Unblock
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-smoke py-4">No users match this filter.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

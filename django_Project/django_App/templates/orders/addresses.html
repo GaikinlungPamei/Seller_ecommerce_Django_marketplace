@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Delivery addresses · VENDRO{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-4">
+    <p class="eyebrow mb-1" style="color:var(--flame)">Account</p>
+    <h1 class="h2 mb-1">Delivery addresses</h1>
+    <p class="text-smoke small mb-4">Saved addresses autofill at checkout.</p>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            {% if addresses %}
+            <div class="row g-3">
+                {% for address in addresses %}
+                <div class="col-md-6">
+                    <div class="card-v p-3 h-100">
+                        <div class="d-flex align-items-start justify-content-between gap-2">
+                            <div>
+                                <p class="fw-bold mb-1">{{ address.full_name }}
+                                    {% if address.is_default %}<span class="pill pill-delivered ms-1">Default</span>{% endif %}</p>
+                                <p class="text-smoke small mb-1">{{ address.one_line }}</p>
+                                <p class="text-smoke small mb-0"><i class="bi bi-telephone me-1"></i>{{ address.phone }}
+                                </p>
+                            </div>
+                            <form method="post" action="{% url 'orders:address_delete' address.pk %}" class="m-0"
+                                data-confirm="Delete this address?">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-link text-smoke p-0" aria-label="Delete address"><i
+                                        class="bi bi-trash3"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="card-v empty-state">
+                <span class="icon"><i class="bi bi-geo-alt"></i></span>
+                <h2 class="h5">No saved addresses</h2>
+                <p class="text-smoke small mb-0">Add one on the right to speed up checkout.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card-v p-4">
+                <h2 class="h5 mb-3">Add an address</h2>
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="{% if field.name in 'line1,line2' %}col-12{% else %}col-sm-6{% endif %}">
+                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        <div class="col-12">
+                            <label class="form-check small text-smoke mb-0">
+                                <input type="checkbox" name="make_default" class="form-check-input"> Make this my
+                                default address
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-dark rounded-pill px-4 mt-4">Save address</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

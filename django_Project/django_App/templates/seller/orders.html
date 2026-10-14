@@ -1,0 +1,222 @@
+{% extends "base_seller.html" %}
+{% load rating_tags humanize %}
+
+{% block title %}Customer Orders &amp; Fulfilment · Seller Studio{% endblock %}
+{% block nav_orders %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl pb-5">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+        <div>
+            <p class="eyebrow mb-1" style="color:var(--flame)">
+                <i class="bi bi-bag-check me-1"></i>Order Fulfilment Desk
+            </p>
+            <h1 class="h2 mb-1">Customer Orders <span class="text-smoke">({{ groups|length }})</span></h1>
+            <p class="text-smoke small mb-0">
+                Receive, accept, and advance customer orders through fulfilment and delivery stages.
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'seller:sales' %}" class="btn btn-outline-dark rounded-pill px-3">
+                <i class="bi bi-graph-up-arrow me-1"></i>View Sales &amp; Revenue
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Status Filter Panel -->
+    <div class="card-v p-3 mb-4 shadow-sm">
+        <form method="get" class="row g-2 align-items-center">
+            <!-- Search Query -->
+            <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" value="{{ q }}" class="form-control"
+                           placeholder="Search by order reference (#ORD-...), customer name, city, phone...">
+                </div>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="col-md-4">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="status" class="text-smoke small fw-bold mb-0 text-nowrap">Filter Status:</label>
+                    <select id="status" name="status" class="form-select form-select-sm rounded-pill" data-auto-submit>
+                        <option value="">All Orders ({% if not status_filter %}{{ groups|length }}{% else %}All{% endif %})</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-3 d-flex justify-content-md-end gap-2">
+                <button type="submit" class="btn btn-sm btn-dark rounded-pill px-3">Search</button>
+                {% if q or status_filter %}
+                <a href="{% url 'seller:orders' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Reset</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Quick Workflow Progress Summary Guide -->
+    <div class="card-v p-3 mb-4 bg-light border-0">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <span class="text-smoke small fw-bold text-uppercase" style="letter-spacing:0.04em">
+                <i class="bi bi-arrow-right-circle me-1"></i>Seller Order Processing Workflow:
+            </span>
+            <div class="d-flex flex-wrap align-items-center gap-2 small">
+                <span class="badge bg-warning text-dark rounded-pill">1. Pending (Receive)</span>
+                <i class="bi bi-arrow-right text-muted"></i>
+                <span class="badge bg-info text-dark rounded-pill">2. Confirmed (Accept)</span>
+                <i class="bi bi-arrow-right text-muted"></i>
+                <span class="badge bg-primary text-white rounded-pill">3. Shipped</span>
+                <i class="bi bi-arrow-right text-muted"></i>
+                <span class="badge bg-secondary text-white rounded-pill">4. Out for Delivery</span>
+                <i class="bi bi-arrow-right text-muted"></i>
+                <span class="badge bg-success text-white rounded-pill">5. Delivered (Completed)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders List -->
+    {% if groups %}
+    <div class="d-flex flex-column gap-4">
+        {% for group in groups %}
+        {% with order=group.order %}
+        <article class="card-v flush shadow-sm">
+            <!-- Order Header -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-4 py-3 bg-cream"
+                style="border-bottom:1px solid rgba(23,19,12,.1)">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="font-display fw-bold" style="font-size:1.15rem">{{ order.reference }}</span>
+                        <span class="badge bg-light text-dark border rounded-pill small">
+                            {{ order.created_at|date:"M j, Y, g:i A" }}
+                        </span>
+                    </div>
+                    <p class="text-smoke mb-0" style="font-size:.78rem">
+                        Customer: <strong class="text-dark">{{ order.ship_name }}</strong> ·
+                        Payment: <span class="fw-semibold">{% if order.payment_method == "cod" %}Cash on Delivery (COD){% else %}Online Payment{% endif %}</span>
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="pill pill-{{ order.payment_status }}">{{ order.get_payment_status_display }}</span>
+                    <span class="pill pill-{{ order.status }} fw-bold">{{ order.get_status_display }}</span>
+                </div>
+            </div>
+
+            <!-- Order Body -->
+            <div class="row g-3 p-4">
+                <!-- Left: Products bought & Shipping Address -->
+                <div class="col-lg-8">
+                    <h6 class="small fw-bold text-uppercase text-smoke mb-2" style="letter-spacing:0.04em">
+                        Your Products in this Order
+                    </h6>
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        {% for line in group.lines %}
+                        <div class="d-flex align-items-center gap-3 rounded-3 p-2 bg-cream border">
+                            <img src="{{ line.image }}" alt="{{ line.title }}" class="thumb-sm rounded" style="width:2.8rem;height:2.8rem;object-fit:cover">
+                            <div class="flex-grow-1" style="min-width:0">
+                                <a href="{% url 'products:detail' line.product_id %}" target="_blank"
+                                    class="fw-semibold small text-truncate d-block text-dark text-decoration-none hover-flame">
+                                    {{ line.title }}
+                                </a>
+                                <span class="text-smoke small">${{ line.price }} × {{ line.quantity }} unit{{ line.quantity|pluralize }}</span>
+                            </div>
+                            <span class="fw-bold small text-dark">${{ line.line_total }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Shipping Address Info -->
+                    <div class="p-3 rounded-2 bg-light border small">
+                        <div class="d-flex align-items-center gap-1 text-dark fw-semibold mb-1">
+                            <i class="bi bi-geo-alt-fill text-danger"></i> Delivery Destination:
+                        </div>
+                        <div class="text-smoke">
+                            <strong>{{ order.ship_name }}</strong> · {{ order.ship_phone }}<br>
+                            {{ order.ship_one_line }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Totals and Fulfilment Status Action -->
+                <div class="col-lg-4 d-flex flex-column justify-content-between p-3 rounded-3 bg-light border">
+                    <div>
+                        <div class="text-center pb-3 border-bottom mb-3">
+                            <span class="text-smoke small d-block">Your Subtotal for Order</span>
+                            <span class="price fw-bold fs-3" style="color:var(--flame)">${{ group.total }}</span>
+                        </div>
+
+                        <!-- Current Order Status Summary -->
+                        <div class="mb-3">
+                            <span class="text-smoke small d-block mb-1">Current Fulfilment Status:</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="pill pill-{{ order.status }} fw-bold">{{ order.get_status_display }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action buttons based on status -->
+                    <div>
+                        {% if order.is_open and order.next_status %}
+                        <form method="post" action="{% url 'seller:order_advance' order.pk %}" class="m-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="{{ order.next_status }}">
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+                            {% if order.status == "pending" %}
+                            <button type="submit" class="btn btn-flame w-100 rounded-pill py-2 shadow-sm">
+                                <i class="bi bi-check2-circle me-1"></i>Accept &amp; Confirm Order
+                            </button>
+                            <p class="text-smoke text-center small mt-1 mb-0">Accepting confirms stock allocation.</p>
+                            {% elif order.status == "confirmed" %}
+                            <button type="submit" class="btn btn-dark w-100 rounded-pill py-2 shadow-sm">
+                                <i class="bi bi-box-seam me-1"></i>Mark as Shipped
+                            </button>
+                            {% elif order.status == "shipped" %}
+                            <button type="submit" class="btn btn-dark w-100 rounded-pill py-2 shadow-sm">
+                                <i class="bi bi-truck me-1"></i>Mark Out for Delivery
+                            </button>
+                            {% elif order.status == "out_for_delivery" %}
+                            <button type="submit" class="btn btn-success w-100 rounded-pill py-2 shadow-sm">
+                                <i class="bi bi-patch-check-fill me-1"></i>Mark as Delivered
+                            </button>
+                            {% endif %}
+                        </form>
+                        {% elif order.status == "delivered" %}
+                        <div class="text-center p-2 rounded-pill bg-success-subtle text-success fw-bold small">
+                            <i class="bi bi-check-circle-fill me-1"></i>Order Fulfilled Successfully
+                        </div>
+                        {% elif order.status == "cancelled" %}
+                        <div class="text-center p-2 rounded-pill bg-danger-subtle text-danger fw-bold small">
+                            <i class="bi bi-x-circle-fill me-1"></i>Order Cancelled
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </article>
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card-v empty-state p-5 text-center shadow-sm">
+        <span class="icon fs-1 text-muted mb-3"><i class="bi bi-truck"></i></span>
+        <h2 class="h4">No customer orders found</h2>
+        <p class="text-smoke small mx-auto mb-3" style="max-width:28rem">
+            {% if q or status_filter %}
+            No orders matched your search or status filter. Try clearing your filters to view all orders.
+            <div class="mt-2">
+                <a href="{% url 'seller:orders' %}" class="btn btn-sm btn-outline-dark rounded-pill px-3">View all orders</a>
+            </div>
+            {% else %}
+            When customers place orders for your products, they will arrive here for you to accept, prepare and fulfil.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

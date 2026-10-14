@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% load rating_tags %}
+
+{% block title %}{{ product.title }} · DJGO{% endblock %}
+{% block description %}{{ product.description|truncatewords:28 }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-4">
+    <!-- breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small text-smoke" style="--bs-breadcrumb-divider:'›'">
+            <li class="breadcrumb-item"><a href="{% url 'products:list' %}">Shop</a></li>
+            {% if product.category %}
+            <li class="breadcrumb-item"><a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active text-ink" aria-current="page">{{ product.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-5">
+        <!-- image -->
+        <div class="col-lg-6">
+            <div class="position-relative anim-rise"
+                style="border-radius:2rem;overflow:hidden;border:1px solid rgba(23,19,12,.1);background:var(--cream)">
+                <img src="{{ product.display_image }}" alt="{{ product.title }}" class="w-100"
+                    style="aspect-ratio:4/5;object-fit:cover">
+                {% if product.is_out_of_stock %}
+                <span class="pill pill-out position-absolute" style="top:1.25rem;left:1.25rem">Sold out</span>
+                {% elif product.is_low_stock %}
+                <span class="pill pill-low position-absolute" style="top:1.25rem;left:1.25rem">Low stock — {{ product.stock }} left</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- details -->
+        <div class="col-lg-6 anim-rise anim-1">
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                {% if product.category %}<span class="pill pill-bare" style="background:rgba(23,19,12,.06);color:var(--smoke)">{{ product.category.name }}</span>{% endif %}
+                {% if product.seller.shop_name %}
+                <span class="pill pill-bare" style="background:rgba(199,72,29,.1);color:var(--flame)">
+                    <i class="bi bi-shop"></i> {{ product.seller.shop_name }}
+                </span>
+                {% endif %}
+            </div>
+
+            <h1 class="font-display fw-semibold" style="font-size:clamp(2rem,4vw,2.9rem);line-height:1.08">{{ product.title }}</h1>
+
+            <div class="d-flex align-items-center gap-2 mt-2">
+                {% stars product.avg_rating|default:product.rating_value 16 %}
+                <span class="fw-semibold small">{% if product.avg_rating %}{{ product.avg_rating|floatformat:1 }}{% else %}—{% endif %}</span>
+                <span class="text-smoke small">{{ product.review_count }} review{{ product.review_count|pluralize }}</span>
+            </div>
+
+            <p class="price mt-3 mb-1" style="font-size:2rem">${{ product.price }}</p>
+            <p class="eyebrow mb-0"
+                style="color: {% if product.is_out_of_stock %} var(--flame){% elif product.is_low_stock %}var(--gold){% else %}var(--moss){% endif %}">
+                {% if product.is_out_of_stock %}Out of stock
+                {% elif product.is_low_stock %}Hurry — only {{ product.stock }} in stock
+                {% else %}{{ product.stock }} in stock{% endif %}
+            </p>
+
+            <p class="mt-3 text-smoke" style="max-width:34rem;line-height:1.7">{{ product.description }}</p>
+
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-4">
+                <form method="post" action="{% url 'orders:cart_add' %}" class="d-flex flex-wrap align-items-center gap-2 m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <span data-stepper class="qty-stepper">
+                        <button type="button" data-step="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
+                        <input type="number" name="quantity" value="1" min="1" max="{{ max_qty }}" aria-label="Quantity"
+                            class="qty border-0 bg-transparent">
+                        <button type="button" data-step="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
+                    </span>
+                    <button type="submit" class="btn btn-dark rounded-pill px-4" {% if product.is_out_of_stock %}disabled{% endif %}>
+                        <i class="bi bi-bag-plus me-1"></i>{% if product.is_out_of_stock %}Sold out{% else %}Add to cart{% endif %}
+                    </button>
+                    <button type="submit" name="buy_now" value="1" class="btn btn-flame rounded-pill px-4" {% if product.is_out_of_stock %}disabled{% endif %}>
+                        <i class="bi bi-lightning-charge-fill me-1"></i>Buy now
+                    </button>
+                </form>
+
+                {% if user.is_authenticated and user.is_customer or user.is_admin_role or user.is_superuser %}
+                <form method="post" action="{% url 'orders:wishlist_toggle' %}" data-wishlist class="m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="btn btn-outline-ink rounded-pill px-3 {% if in_wishlist %}on{% endif %}">
+                        <i class="bi {% if in_wishlist %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
+                        <span class="wishlist-label">{% if in_wishlist %}Saved{% else %}Wishlist{% endif %}</span>
+                    </button>
+                </form>
+                {% else %}
+                <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-outline-ink rounded-pill px-3" title="Sign in to save to wishlist">
+                    <i class="bi bi-heart me-1"></i>
+                    <span class="wishlist-label">Wishlist</span>
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="row g-3 mt-4 pt-4 border-top">
+                <div class="col-sm-6">
+                    <p class="small text-smoke mb-0"><i class="bi bi-truck me-2" style="color:var(--flame)"></i>Free shipping over $150 · COD available</p>
+                </div>
+                <div class="col-sm-6">
+                    <p class="small text-smoke mb-0"><i class="bi bi-shield-check me-2" style="color:var(--flame)"></i>7-day easy returns · secure payment</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- reviews -->
+    <div class="row g-5 mt-5">
+        <div class="col-lg-8">
+            <h2 class="h3">Reviews <span class="text-smoke">({{ reviews|length }})</span></h2>
+            <div class="mt-3 d-flex flex-column gap-3">
+                {% for review in reviews %}
+                <article class="card-v p-4">
+                    <div class="d-flex align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="avatar">{{ review.user.display_name|first|upper }}</span>
+                            <div>
+                                <p class="fw-bold small mb-0">{{ review.user.display_name }}</p>
+                                <p class="text-smoke mb-0" style="font-size:.72rem">{{ review.created_at|date:"M j, Y" }}</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            {% stars review.rating %}
+                            {% if user.is_admin_role or review.user == user %}
+                            <form method="post" action="{% url 'products:delete_review' review.pk %}" class="m-0" data-confirm="Delete this review?">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-link text-smoke p-0" aria-label="Delete review">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <p class="mt-3 mb-0 small" style="line-height:1.65">{{ review.comment }}</p>
+                </article>
+                {% empty %}
+                <p class="card-v p-4 text-smoke small mb-0">No reviews yet — be the first to share your experience.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card-v p-4">
+                <h3 class="h5">Rate this product</h3>
+                {% if can_review %}
+                <form method="post" class="mt-3">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Your rating</label>
+                        <div class="rating-pick">
+                            {% for value in "54321" %}
+                            <input type="radio" name="rating" id="rate{{ value }}" value="{{ value }}"
+                                {% if not existing_review and value == "5" %}checked{% elif existing_review.rating|stringformat:"s" == value %}checked{% endif %}>
+                            <label for="rate{{ value }}">{{ value }}★</label>
+                            {% endfor %}
+                        </div>
+                        {% if review_form.rating.errors %}
+                        <div class="text-danger small mt-1">{{ review_form.rating.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="id_comment">Your review</label>
+                        <textarea name="comment" id="id_comment" rows="3" class="form-control" required
+                            placeholder="What did you think? Fit, quality, shipping…">{% if existing_review %}{{ existing_review.comment }}{% endif %}</textarea>
+                        {% if review_form.comment.errors %}
+                        <div class="text-danger small mt-1">{{ review_form.comment.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-dark rounded-pill px-4">
+                        {% if existing_review %}Update review{% else %}Post review{% endif %}
+                    </button>
+                </form>
+                {% else %}
+                <p class="small text-smoke mt-2 mb-0">
+                    <a class="link-flame" href="{% url 'accounts:login' %}?next={{ request.path }}">Sign in</a>
+                    as a customer to write a review.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- related -->
+    {% if related %}
+    <section class="mt-5 pt-3">
+        <h2 class="h3 mb-3">You may also like</h2>
+        <div class="row g-3">
+            {% for product in related %}
+            <div class="col-sm-6 col-lg-3">{% include "products/_card.html" %}</div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Order confirmed · VENDRO{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-5 text-center" style="max-width:44rem">
+    <span class="d-inline-flex rounded-circle p-4 mb-3" style="background:rgba(69,82,59,.15);color:var(--moss)">
+        <i class="bi bi-check-circle" style="font-size:2.4rem"></i>
+    </span>
+    <h1 class="font-display fw-semibold" style="font-size:clamp(2rem,5vw,2.8rem)">
+        Order confirmed<span style="color:var(--flame)">.</span>
+    </h1>
+    <p class="text-smoke small mx-auto" style="max-width:32rem">
+        Thank you, {{ order.ship_name|truncatewords:1 }}! Order
+        <b class="text-ink">{{ order.reference }}</b> is
+        {% if order.payment_method == "online" %}paid and{% else %}placed and{% endif %} being prepared.
+        A confirmation email has been sent — track it live from your account.
+    </p>
+
+    <div class="card-v p-4 mt-4 text-start">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pb-3 border-bottom">
+            <div>
+                <p class="eyebrow mb-0">Order</p>
+                <p class="font-display fw-bold mb-0" style="font-size:1.25rem">{{ order.reference }}</p>
+                <p class="text-smoke mb-0" style="font-size:.72rem">{{ order.created_at|date:"M j, Y · H:i" }}</p>
+            </div>
+            <div class="d-flex gap-2">
+                <span class="pill pill-{{ order.status }}">{{ order.get_status_display }}</span>
+                <span class="pill pill-{{ order.payment_status }}">
+                    {% if order.payment_method == "cod" %}Cash on delivery{% else %}Paid online{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-column gap-2 mt-3">
+            {% for item in order.items.all %}
+            <div class="d-flex align-items-center gap-2">
+                <img src="{{ item.image }}" alt="{{ item.title }}" class="thumb-sm">
+                <p class="flex-grow-1 fw-semibold small mb-0 text-truncate">{{ item.title }} <span class="text-smoke">×
+                        {{ item.quantity }}</span></p>
+                <p class="fw-bold small mb-0">${{ item.line_total }}</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center pt-3 mt-3 border-top">
+            <span class="text-smoke small">
+                {% if order.discount > 0 %}Coupon {% if order.coupon %}{{ order.coupon.code }} {% endif %}saved ${{ order.discount }}{% else %}Total charged{% endif %}
+            </span>
+            <span class="price" style="font-size:1.4rem">${{ order.total }}</span>
+        </div>
+
+        {% if order.payment_ref %}
+        <p class="text-smoke mb-0 mt-2" style="font-size:.72rem">
+            <i class="bi bi-receipt me-1"></i>Payment reference: <code>{{ order.payment_ref }}</code>
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+        <a href="{% url 'orders:detail' order.pk %}" class="btn btn-dark rounded-pill px-4">
+            <i class="bi bi-geo-alt me-1"></i>Track order
+        </a>
+        <a href="{% url 'products:list' %}" class="btn btn-outline-ink rounded-pill px-4">
+            Keep shopping <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+</div>
+{% endblock %}

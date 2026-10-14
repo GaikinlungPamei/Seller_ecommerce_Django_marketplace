@@ -1,0 +1,48 @@
+{# Dedicated header + navigation strictly for the Admin Console #}
+<div class="container-xxl pt-4">
+    <div class="panel-head d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge rounded-pill bg-danger-subtle text-danger fw-semibold px-2 py-1" style="font-size:0.72rem;letter-spacing:0.05em;text-transform:uppercase">
+                    <i class="bi bi-shield-lock-fill me-1"></i>Admin Console
+                </span>
+                <span class="text-smoke small">Role: Administrator</span>
+            </div>
+            <p class="font-display fw-semibold mb-0" style="font-size:1.5rem">
+                Marketplace Control Hub
+            </p>
+        </div>
+        <nav class="studio-nav d-flex flex-wrap gap-2">
+            <a href="{% url 'console:dashboard' %}" class="{% if active == 'dashboard' %}active{% endif %}">
+                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+            </a>
+            <a href="{% url 'accounts:user_list' %}?role=customer" class="{% if active == 'customers' or role_filter == 'customer' %}active{% endif %}">
+                <i class="bi bi-people me-1"></i>Customers
+            </a>
+            <a href="{% url 'accounts:user_list' %}?role=seller" class="{% if active == 'sellers' or role_filter == 'seller' %}active{% endif %}">
+                <i class="bi bi-shop me-1"></i>Sellers
+            </a>
+            <a href="{% url 'products:admin_categories' %}" class="{% if active == 'categories' %}active{% endif %}">
+                <i class="bi bi-tags me-1"></i>Categories
+            </a>
+            <a href="{% url 'products:admin_list' %}" class="{% if active == 'products' %}active{% endif %}">
+                <i class="bi bi-boxes me-1"></i>Products
+            </a>
+            <a href="{% url 'console:orders' %}" class="{% if active == 'orders' %}active{% endif %}">
+                <i class="bi bi-bag-check me-1"></i>Orders
+            </a>
+            <a href="{% url 'console:coupons' %}" class="{% if active == 'coupons' %}active{% endif %}">
+                <i class="bi bi-ticket-perforated me-1"></i>Coupons
+            </a>
+            <a href="{% url 'console:payments' %}" class="{% if active == 'payments' %}active{% endif %}">
+                <i class="bi bi-credit-card me-1"></i>Payments
+            </a>
+            <a href="{% url 'console:reports' %}" class="{% if active == 'reports' %}active{% endif %}">
+                <i class="bi bi-graph-up-arrow me-1"></i>Reports
+            </a>
+            <a href="{% url 'products:admin_reviews' %}" class="{% if active == 'reviews' %}active{% endif %}">
+                <i class="bi bi-star me-1"></i>Reviews
+            </a>
+        </nav>
+    </div>
+</div>

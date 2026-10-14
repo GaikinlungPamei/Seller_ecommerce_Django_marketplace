@@ -1,0 +1,149 @@
+{% extends "base_seller.html" %}
+{% load rating_tags humanize %}
+
+{% block title %}Sales History &amp; Revenue Analytics · Seller Studio{% endblock %}
+{% block nav_sales %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl pb-5">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+        <div>
+            <p class="eyebrow mb-1" style="color:var(--flame)">
+                <i class="bi bi-graph-up-arrow me-1"></i>Revenue Intelligence
+            </p>
+            <h1 class="h2 mb-1">Sales History &amp; Revenue</h1>
+            <p class="text-smoke small mb-0">
+                Performance metrics, 14-day revenue trajectory, and itemized sales history for your shop.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'seller:orders' %}" class="btn btn-outline-dark rounded-pill px-3">
+                <i class="bi bi-bag-check me-1"></i>Fulfil Orders
+            </a>
+            <a href="{% url 'products:seller_list' %}" class="btn btn-flame rounded-pill px-3">
+                <i class="bi bi-boxes me-1"></i>Manage Inventory
+            </a>
+        </div>
+    </div>
+
+    <!-- Revenue KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3 shadow-sm">
+                <div class="d-flex justify-content-between">
+                    <span class="eyebrow">Delivered Revenue</span>
+                    <i class="bi bi-cash-stack kpi-icon"></i>
+                </div>
+                <p class="kpi-value text-success">${{ summary.revenue|floatformat:2|intcomma }}</p>
+                <p class="kpi-sub mb-0">{{ summary.delivered_orders }} delivered order{{ summary.delivered_orders|pluralize }}</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3 shadow-sm">
+                <div class="d-flex justify-content-between">
+                    <span class="eyebrow">In Fulfillment Pipeline</span>
+                    <i class="bi bi-hourglass-split kpi-icon"></i>
+                </div>
+                <p class="kpi-value">${{ summary.pipeline_value|floatformat:2|intcomma }}</p>
+                <p class="kpi-sub mb-0">{{ summary.open_orders }} open order{{ summary.open_orders|pluralize }} in progress</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3 shadow-sm">
+                <div class="d-flex justify-content-between">
+                    <span class="eyebrow">Units Sold</span>
+                    <i class="bi bi-box-seam kpi-icon"></i>
+                </div>
+                <p class="kpi-value">{{ summary.units|intcomma }}</p>
+                <p class="kpi-sub mb-0">Across {{ summary.orders }} customer orders</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3 shadow-sm">
+                <div class="d-flex justify-content-between">
+                    <span class="eyebrow">Cancelled Orders</span>
+                    <i class="bi bi-arrow-counterclockwise kpi-icon"></i>
+                </div>
+                <p class="kpi-value text-muted">{{ summary.cancelled_orders }}</p>
+                <p class="kpi-sub mb-0">Product stock automatically restored</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 14-Day Revenue Trend Chart -->
+    <div class="card-v p-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="h5 mb-0"><i class="bi bi-bar-chart-line me-2 text-warning"></i>14-Day Revenue Trajectory</h2>
+                <p class="text-smoke small mb-0">Daily gross sales recorded from completed and in-flight orders.</p>
+            </div>
+            <span class="badge bg-light text-dark border rounded-pill">Trailing 14 Days</span>
+        </div>
+        <div class="bars dark pt-2">
+            {% for day in chart %}
+            <div class="bar-col">
+                <span class="bar-value">${{ day.total|floatformat:0 }}</span>
+                <div class="bar" style="height:{{ day.total|percent_of:max_chart }}%"></div>
+                <span class="bar-label">{{ day.label }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Itemized Sales History -->
+    <div class="card-v flush table-scroll shadow-sm">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-cream">
+            <h3 class="h6 fw-bold mb-0 text-dark">
+                <i class="bi bi-clock-history me-1 text-primary"></i>Recent Product Sales Log
+            </h3>
+            <span class="text-smoke small">Last 100 sales line items</span>
+        </div>
+        <table class="table-v align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Order Reference</th>
+                    <th>Date</th>
+                    <th>Product</th>
+                    <th>Units Sold</th>
+                    <th>Unit Price</th>
+                    <th>Line Total</th>
+                    <th>Fulfillment Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in items %}
+                <tr>
+                    <td class="fw-bold">
+                        <a href="{% url 'seller:orders' %}?q={{ line.order.reference }}" class="text-dark text-decoration-none hover-flame">
+                            {{ line.order.reference }}
+                        </a>
+                    </td>
+                    <td class="text-smoke small">{{ line.order.created_at|date:"M j, Y, g:i A" }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="{{ line.image }}" alt="{{ line.title }}" class="thumb-sm rounded" style="width:2.4rem;height:2.4rem;object-fit:cover">
+                            <a href="{% url 'products:detail' line.product_id %}" target="_blank"
+                               class="fw-semibold text-dark text-decoration-none hover-flame text-truncate" style="max-width:16rem">
+                                {{ line.title }}
+                            </a>
+                        </div>
+                    </td>
+                    <td class="fw-semibold">{{ line.quantity }}</td>
+                    <td>${{ line.price }}</td>
+                    <td class="fw-bold" style="color:var(--flame)">${{ line.line_total }}</td>
+                    <td><span class="pill pill-{{ line.order.status }}">{{ line.order.get_status_display }}</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-smoke py-5">
+                        <i class="bi bi-inbox fs-2 d-block text-muted mb-2"></i>
+                        No sales line items recorded yet. As customers purchase your products, they will appear here.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

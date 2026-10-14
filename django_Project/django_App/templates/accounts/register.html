@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Create account · DJGO{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-6 col-xl-5">
+            <div class="card-v p-4">
+                <h1 class="h3 mb-1">Create your account</h1>
+                <p class="text-smoke small mb-4">
+                    Shop as a customer, or open a store as a seller — seller accounts go live after admin approval.
+                </p>
+
+                <!-- role switcher -->
+                <div class="d-flex gap-2 p-1 rounded-3 mb-4"
+                    style="background:rgba(255,255,255,.6);border:1px solid rgba(23,19,12,.1)">
+                    {% if role == "seller" %}
+                    <a href="{% url 'accounts:register' %}"
+                        class="flex-fill text-center rounded-3 py-2 fw-bold small text-uppercase"
+                        style="letter-spacing:.12em;font-size:.7rem;color:var(--smoke);text-decoration:none">
+                        I shop
+                    </a>
+                    <a href="{% url 'accounts:register_role' 'seller' %}"
+                        class="flex-fill text-center rounded-3 py-2 fw-bold text-uppercase"
+                        style="letter-spacing:.12em;font-size:.7rem;background:var(--ink);color:var(--paper);text-decoration:none">
+                        I sell
+                    </a>
+                    {% else %}
+                    <a href="{% url 'accounts:register' %}"
+                        class="flex-fill text-center rounded-3 py-2 fw-bold small text-uppercase"
+                        style="letter-spacing:.12em;font-size:.7rem;background:var(--ink);color:var(--paper);text-decoration:none">
+                        I shop
+                    </a>
+                    <a href="{% url 'accounts:register_role' 'seller' %}"
+                        class="flex-fill text-center rounded-3 py-2 fw-bold text-uppercase"
+                        style="letter-spacing:.12em;font-size:.7rem;color:var(--smoke);text-decoration:none">
+                        I sell
+                    </a>
+                    {% endif %}
+                </div>
+
+                {% if role == "seller" %}
+                <div class="alert alert-warning small d-flex gap-2">
+                    <i class="bi bi-info-circle"></i>
+                    <div>Seller registrations are reviewed by an administrator before products can be published.</div>
+                </div>
+                {% endif %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label" for="{{ form.first_name.id_for_label }}">First name</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}<div class="text-danger small mt-1">{{ form.first_name.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="{{ form.last_name.id_for_label }}">Last name</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}<div class="text-danger small mt-1">{{ form.last_name.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors|striptags }}</div>{% endif %}
+                        </div>
+
+                        {% if role == "seller" %}
+                        <div class="col-12">
+                            <label class="form-label" for="{{ form.shop_name.id_for_label }}">Shop name</label>
+                            {{ form.shop_name }}
+                            {% if form.shop_name.errors %}<div class="text-danger small mt-1">{{ form.shop_name.errors|striptags }}</div>{% endif %}
+                        </div>
+                        {% endif %}
+                        <div class="col-sm-6">
+                            <label class="form-label" for="{{ form.password1.id_for_label }}">Password</label>
+                            {{ form.password1 }}
+                            {% if form.password1.errors %}<div class="text-danger small mt-1">{{ form.password1.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="{{ form.password2.id_for_label }}">Confirm password</label>
+                            {{ form.password2 }}
+                            {% if form.password2.errors %}<div class="text-danger small mt-1">{{ form.password2.errors|striptags }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-flame w-100 rounded-pill py-2 mt-4">Create account</button>
+                </form>
+
+                <p class="text-center text-smoke small mt-4 mb-0">
+                    Already registered? <a href="{% url 'accounts:login' %}" class="link-flame">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

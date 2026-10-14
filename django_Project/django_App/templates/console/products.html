@@ -1,0 +1,81 @@
+{% extends "base_admin.html" %}
+{% load rating_tags humanize %}
+
+{% block title %}All products · Admin Console{% endblock %}
+{% block nav_products %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+    <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-4">
+        <div>
+            <p class="eyebrow mb-1" style="color:var(--flame)">Marketplace catalogue</p>
+            <h1 class="h2 mb-0">All products <span class="text-smoke">({{ products|length }})</span></h1>
+            <p class="text-smoke small mb-0">Every listing across sellers — {{ out_of_stock }} currently out of stock.
+            </p>
+        </div>
+        <form method="get" class="d-flex gap-2">
+            <input type="search" name="q" value="{{ q }}" class="form-control form-control-sm rounded-pill"
+                placeholder="Search title or shop…" style="width:16rem">
+            <button class="btn btn-sm btn-dark rounded-pill px-3">Search</button>
+        </form>
+    </div>
+
+    <div class="card-v flush table-scroll">
+        <table class="table-v">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Seller</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Rating</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="{{ product.display_image }}" alt="{{ product.title }}" class="thumb">
+                            <div style="min-width:0">
+                                <a href="{{ product.get_absolute_url }}" class="fw-semibold d-block text-truncate"
+                                    style="max-width:15rem">{{ product.title }}</a>
+                                <span class="text-smoke" style="font-size:.7rem">{{ product.created_at|date:"M j, Y" }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-smoke">{{ product.seller.shop_name|default:product.seller.display_name }}</td>
+                    <td class="text-smoke">{{ product.category.name|default:"—" }}</td>
+                    <td class="fw-bold">${{ product.price }}</td>
+                    <td>
+                        <span class="fw-bold"
+                            style="color:{% if product.is_out_of_stock %}var(--flame){% elif product.is_low_stock %}var(--gold){% else %}var(--moss){% endif %}">{{ product.stock }}</span>
+                    </td>
+                    <td>{% stars product.avg_rating|default:product.rating_value 11 %}</td>
+                    <td><span class="pill pill-{{ product.status }}">{{ product.get_status_display }}</span></td>
+                    <td>
+                        <div class="d-flex justify-content-end">
+                            <form method="post" action="{% url 'products:admin_delete' product.pk %}" class="m-0"
+                                data-confirm="Remove “{{ product.title }}” from the marketplace?">
+                                {% csrf_token %}
+                                <button class="btn btn-sm rounded-pill px-3"
+                                    style="background:rgba(199,72,29,.12);color:var(--flame)">
+                                    <i class="bi bi-trash3 me-1"></i>Remove
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center text-smoke py-4">No products found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

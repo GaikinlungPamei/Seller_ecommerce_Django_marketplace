@@ -1,0 +1,121 @@
+{% extends "base_admin.html" %}
+{% load rating_tags humanize %}
+
+{% block title %}Sales reports · Admin Console{% endblock %}
+{% block nav_reports %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+    <p class="eyebrow mb-1" style="color:var(--flame)">Reporting</p>
+    <h1 class="h2 mb-1">Sales reports</h1>
+    <p class="text-smoke small mb-4">Revenue dashboard statistics for the {{ window }} (since {{ since|date:"M j, Y" }}).</p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100"><span class="eyebrow">Delivered revenue</span>
+                <p class="kpi-value">${{ summary.revenue|floatformat:2|intcomma }}</p>
+                <p class="kpi-sub mb-0">{{ summary.delivered_orders }} delivered order{{ summary.delivered_orders|pluralize }}</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100"><span class="eyebrow">Pipeline value</span>
+                <p class="kpi-value">${{ summary.pipeline_value|floatformat:2|intcomma }}</p>
+                <p class="kpi-sub mb-0">{{ summary.open_orders }} order{{ summary.open_orders|pluralize }} in progress
+                </p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100"><span class="eyebrow">Units sold</span>
+                <p class="kpi-value">{{ summary.units|intcomma }}</p>
+                <p class="kpi-sub mb-0">{{ summary.orders }} live order{{ summary.orders|pluralize }}</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100"><span class="eyebrow">Cancellations</span>
+                <p class="kpi-value">{{ summary.cancelled_orders }}</p>
+                <p class="kpi-sub mb-0">Stock restored automatically</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-v p-4 mb-4">
+        <h2 class="h5 mb-3">Revenue trend — last 30 days</h2>
+        <div class="bars dark">
+            {% for day in chart %}
+            <div class="bar-col">
+                <span class="bar-value">${{ day.total|floatformat:0 }}</span>
+                <div class="bar" style="height:{{ day.total|percent_of:max_chart }}%"></div>
+                <span class="bar-label">{% if forloop.counter|divisibleby:3 %}{{ day.label }}{% endif %}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card-v p-4 h-100">
+                <h2 class="h5 mb-3">Top products</h2>
+                <div class="d-flex flex-column gap-2">
+                    {% for row in top_products %}
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="avatar">{{ forloop.counter }}</span>
+                        <span class="flex-grow-1 fw-semibold small text-truncate">{{ row.title }}</span>
+                        <span class="text-smoke small">{{ row.units }} sold · <b class="text-ink">${{ row.revenue|floatformat:2 }}</b></span>
+                    </div>
+                    {% empty %}
+                    <p class="text-smoke small mb-0">No sales data yet.</p>
+                    {% endfor %}
+                </div>
+
+                <div class="divider my-4"></div>
+                <p class="eyebrow mb-2">Orders by status</p>
+                <div class="status-bar">
+                    {% for row in status_rows %}{% if row.n %}<span class="st-{{ row.status }}"
+                        style="width:{{ row.pct }}%" title="{{ row.label }}: {{ row.n }}"></span>{% endif %}{% endfor %}
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    {% for row in status_rows %}
+                    <span class="d-flex align-items-center gap-1 small"><span class="pill pill-{{ row.status }}">{{ row.label }}</span><b>{{ row.n }}</b></span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card-v flush table-scroll h-100">
+                <div class="px-4 pt-4">
+                    <h2 class="h5 mb-1">Seller performance</h2>
+                    <p class="text-smoke small mb-3">Revenue and volume per approved shop.</p>
+                </div>
+                <table class="table-v">
+                    <thead>
+                        <tr>
+                            <th>Seller</th>
+                            <th>Products</th>
+                            <th>Units</th>
+                            <th class="text-end">Gross</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for seller in sellers %}
+                        <tr>
+                            <td>
+                                <p class="fw-semibold mb-0">{{ seller.shop_name|default:seller.display_name }}</p>
+                                <p class="text-smoke mb-0" style="font-size:.7rem">{{ seller.email }}</p>
+                            </td>
+                            <td>{{ seller.product_count|default:0 }}</td>
+                            <td>{{ seller.sold_units|default:0 }}</td>
+                            <td class="text-end fw-bold">${{ seller.gross|default:0|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-smoke py-4">No sellers yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,291 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        {% block title %}Admin Console · Marketplace Operations{% endblock %}
+    </title>
+    <!-- Google Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,300;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+
+    <style>
+        /* Dedicated Admin Master Theme Overrides */
+        body.admin-body {
+            background-color: #f7f6f2;
+            color: var(--ink);
+        }
+
+        .admin-topbar {
+            background: #11100e;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 0.75rem 0;
+            position: relative;
+            z-index: 1040;
+        }
+
+        .admin-topbar .dropdown-menu {
+            z-index: 1060;
+        }
+
+        .admin-nav-bar {
+            background: #1c1a17;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 0.6rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+        }
+
+        .admin-nav-item {
+            color: rgba(245, 241, 232, 0.75);
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.4rem 0.85rem;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .admin-nav-item:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .admin-nav-item.active {
+            color: #fff;
+            background: var(--flame);
+            border-color: var(--flame);
+            box-shadow: 0 2px 8px rgba(199, 72, 29, 0.35);
+        }
+
+        .admin-footer {
+            background: #11100e;
+            color: rgba(245, 241, 232, 0.6);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 1.5rem 0;
+            font-size: 0.8rem;
+        }
+
+        .workflow-step-num {
+            display: inline-block;
+            width: 1.25rem;
+            height: 1.25rem;
+            line-height: 1.25rem;
+            text-align: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            font-size: 0.65rem;
+            margin-right: 0.35rem;
+        }
+
+        .admin-nav-item.active .workflow-step-num {
+            background: rgba(0, 0, 0, 0.25);
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body class="admin-body d-flex flex-column min-vh-100">
+    <!-- ========================================================== -->
+    <!-- 1. ADMIN TOP BAR (Header & Global Actions) -->
+    <!-- ========================================================== -->
+    <header class="admin-topbar">
+        <div class="container-xxl d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <a class="navbar-brand text-white fw-bold fs-4 d-flex align-items-center mb-0" href="{% url 'console:dashboard' %}">
+                    DJGO<span class="dot" style="color:var(--flame)">.</span>
+                </a>
+                <span class="badge rounded-pill bg-danger-subtle text-danger fw-bold px-2 py-1" style="font-size:0.75rem;letter-spacing:0.04em">
+                    <i class="bi bi-shield-lock-fill me-1"></i>ADMIN CONSOLE
+                </span>
+                <span class="text-white-50 d-none d-md-inline" style="font-size:0.8rem">
+                    Executive Control Portal
+                </span>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <!-- Storefront quick switch -->
+                <a href="{% url 'home' %}" target="_blank" class="btn btn-outline-light btn-sm rounded-pill px-3" title="Open Public Storefront">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>Live Store
+                </a>
+
+                <!-- Admin user dropdown -->
+                {% if user.is_authenticated %}
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-dark text-white rounded-pill px-3 py-1 dropdown-toggle d-flex align-items-center gap-2 border border-secondary"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="avatar bg-danger text-white rounded-circle d-inline-flex align-items-center justify-content-center"
+                              style="width:1.6rem;height:1.6rem;font-size:0.75rem;font-weight:700">
+                            {{ user.display_name|first|upper }}
+                        </span>
+                        <span class="fw-semibold small d-none d-sm-inline">{{ user.display_name|truncatechars:15 }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li class="dropdown-header">
+                            <span class="fw-bold d-block text-dark">{{ user.display_name }}</span>
+                            <span class="text-muted small">{{ user.email }}</span>
+                        </li>
+                        <li>
+                            <span class="dropdown-item-text">
+                                <span class="badge bg-danger rounded-pill">Administrator</span>
+                            </span>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'console:dashboard' %}">
+                                <i class="bi bi-speedometer2 me-2"></i>Admin Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'accounts:profile' %}">
+                                <i class="bi bi-person-gear me-2"></i>My Profile &amp; Password
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'accounts:logout' %}">
+                                <i class="bi bi-box-arrow-right me-2"></i>Sign out
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================================== -->
+    <!-- 2. ADMIN WORKFLOW NAVIGATION RIBBON (Structured Order) -->
+    <!-- Workflow: Dashboard → Users → Approve Sellers → Categories/Products → Orders → Coupons → Payments → Reviews → Reports -->
+    <!-- ========================================================== -->
+    <nav class="admin-nav-bar">
+        <div class="container-xxl">
+            <div class="d-flex align-items-center gap-1 overflow-x-auto pb-1" style="scrollbar-width: thin;">
+                <!-- Step 1: Dashboard -->
+                <a href="{% url 'console:dashboard' %}"
+                   class="admin-nav-item {% block nav_dashboard %}{% if active == 'dashboard' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                </a>
+
+                <!-- Step 2: Manage Users (Customers & Sellers) -->
+                <a href="{% url 'accounts:user_list' %}"
+                   class="admin-nav-item {% block nav_users %}{% if active == 'users' or active == 'customers' or active == 'sellers' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-people me-1"></i>Manage Users
+                </a>
+
+                <!-- Step 3: Approve Sellers -->
+                <a href="{% url 'accounts:user_list' %}?role=seller&status=pending"
+                   class="admin-nav-item {% block nav_approvals %}{% if active == 'approvals' %}active{% endif %}{% endblock %} position-relative">
+                    <i class="bi bi-person-check me-1"></i>Approve Sellers
+                    {% if admin_pending_sellers %}
+                    <span class="badge rounded-pill bg-warning text-dark ms-1" style="font-size:0.68rem">
+                        {{ admin_pending_sellers }}
+                    </span>
+                    {% endif %}
+                </a>
+
+                <!-- Step 4: Categories -->
+                <a href="{% url 'products:admin_categories' %}"
+                   class="admin-nav-item {% block nav_categories %}{% if active == 'categories' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-tags me-1"></i>Categories
+                </a>
+
+                <!-- Step 5: Products -->
+                <a href="{% url 'products:admin_list' %}"
+                   class="admin-nav-item {% block nav_products %}{% if active == 'products' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-boxes me-1"></i>Products
+                </a>
+
+                <!-- Step 6: Monitor Orders -->
+                <a href="{% url 'console:orders' %}"
+                   class="admin-nav-item {% block nav_orders %}{% if active == 'orders' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-bag-check me-1"></i>Monitor Orders
+                </a>
+
+                <!-- Step 7: Manage Coupons -->
+                <a href="{% url 'console:coupons' %}"
+                   class="admin-nav-item {% block nav_coupons %}{% if active == 'coupons' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-ticket-perforated me-1"></i>Manage Coupons
+                </a>
+
+                <!-- Step 8: Monitor Payments -->
+                <a href="{% url 'console:payments' %}"
+                   class="admin-nav-item {% block nav_payments %}{% if active == 'payments' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-credit-card me-1"></i>Monitor Payments
+                </a>
+
+                <!-- Step 9: Manage Reviews -->
+                <a href="{% url 'products:admin_reviews' %}"
+                   class="admin-nav-item {% block nav_reviews %}{% if active == 'reviews' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-star me-1"></i>Manage Reviews
+                </a>
+
+                <!-- Step 10: View Reports -->
+                <a href="{% url 'console:reports' %}"
+                   class="admin-nav-item {% block nav_reports %}{% if active == 'reports' %}active{% endif %}{% endblock %}">
+                    <i class="bi bi-graph-up-arrow me-1"></i>View Reports
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========================================================== -->
+    <!-- 3. MAIN WORKSPACE CONTENT -->
+    <!-- ========================================================== -->
+    <main class="flex-grow-1 pt-4 pb-5">
+        <!-- Messages & Notifications -->
+        {% if messages %}
+        <div class="container-xxl mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm" role="alert">
+                <i class="bi {% if message.tags == 'error' %}bi-exclamation-triangle{% elif message.tags == 'success' %}bi-check-circle{% else %}bi-info-circle{% endif %} fs-5"></i>
+                <div class="flex-grow-1">{{ message }}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ========================================================== -->
+    <!-- 4. DEDICATED ADMIN FOOTER -->
+    <!-- ========================================================== -->
+    <footer class="admin-footer mt-auto">
+        <div class="container-xxl d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <span class="fw-bold text-white">DJGO Enterprise Marketplace</span> · Admin Operations Control Center
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span>Role: <strong class="text-white">Administrator</strong></span>
+                <span>•</span>
+                <span>Environment: <strong class="text-white">Active</strong></span>
+                <span>•</span>
+                <span>© {% now "Y" %} DJGO</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

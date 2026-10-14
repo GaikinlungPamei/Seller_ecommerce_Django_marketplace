@@ -1,0 +1,560 @@
+{% extends "base_admin.html" %}
+{% load rating_tags humanize %}
+
+{% block title %}Admin Dashboard · Marketplace Control{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+    <!-- Top Intro Bar -->
+    <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+        <div>
+            <p class="eyebrow mb-1" style="color:var(--flame)">
+                <i class="bi bi-shield-check me-1"></i>Administrator Operations
+            </p>
+            <h1 class="h2 mb-1">Executive Dashboard</h1>
+            <p class="text-smoke small mb-0">
+                Complete platform supervision: customer management, seller approvals, catalog oversight, orders, coupons, payments, and analytics.
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'accounts:user_list' %}?role=seller&status=pending" class="btn btn-sm btn-outline-dark rounded-pill px-3 py-2 position-relative">
+                <i class="bi bi-clock-history me-1"></i>Seller Approvals
+                {% if counts.pending %}
+                <span class="badge bg-danger rounded-pill ms-1">{{ counts.pending }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'console:reports' %}" class="btn btn-sm btn-flame rounded-pill px-3 py-2">
+                <i class="bi bi-graph-up-arrow me-1"></i>Sales Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- 1. DASHBOARD STATISTICS (KPI Cards) -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between">
+                    <span class="eyebrow">Delivered Revenue</span>
+                    <i class="bi bi-cash-stack kpi-icon"></i>
+                </div>
+                <p class="kpi-value">${{ summary.revenue|floatformat:2|intcomma }}</p>
+                <p class="kpi-sub mb-0">{{ summary.open_orders }} orders active · ${{ summary.pipeline_value|floatformat:0 }} in flight</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between">
+                    <span class="eyebrow">Customers</span>
+                    <i class="bi bi-people kpi-icon"></i>
+                </div>
+                <p class="kpi-value">{{ counts.customers }}</p>
+                <p class="kpi-sub mb-0">
+                    <span class="text-success">{{ counts.customers }} active</span> ·
+                    <span class="text-danger">{{ counts.blocked }} blocked</span>
+                </p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between">
+                    <span class="eyebrow">Sellers</span>
+                    <i class="bi bi-shop kpi-icon"></i>
+                </div>
+                <p class="kpi-value">{{ counts.sellers }}</p>
+                <p class="kpi-sub mb-0">
+                    {% if counts.pending %}
+                    <b style="color:var(--gold)"><i class="bi bi-exclamation-circle me-1"></i>{{ counts.pending }} awaiting approval</b>
+                    {% else %}
+                    <span class="text-success">All applications reviewed</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between">
+                    <span class="eyebrow">Catalog Items</span>
+                    <i class="bi bi-boxes kpi-icon"></i>
+                </div>
+                <p class="kpi-value">{{ product_count }}</p>
+                <p class="kpi-sub mb-0">{{ category_count }} categories · {{ low_stock }} low stock</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. CORE ADMIN FUNCTIONS HUB (Command Center Grid) -->
+    <div class="card-v p-4 mb-4" style="background:rgba(255,255,255,0.7)">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="h5 mb-0"><i class="bi bi-grid-fill me-2" style="color:var(--flame)"></i>Admin Command Center</h2>
+                <p class="text-smoke small mb-0">Instant access to all core administration operations and management consoles.</p>
+            </div>
+            <span class="badge rounded-pill bg-dark px-3 py-2">13 Core Operations</span>
+        </div>
+
+        <div class="row g-3">
+            <!-- Function 1: Admin Dashboard -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'console:dashboard' %}" class="card-v p-3 h-100 text-decoration-none text-ink d-flex flex-column justify-content-between hover-lift border">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <i class="bi bi-speedometer2 fs-4 text-primary"></i>
+                            <span class="badge bg-primary-subtle text-primary rounded-pill">Active</span>
+                        </div>
+                        <h3 class="h6 fw-bold mb-1">Admin Dashboard</h3>
+                        <p class="text-smoke mb-0" style="font-size:0.75rem">Operational metrics &amp; platform overview.</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Function 2: Manage Customers -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'accounts:user_list' %}?role=customer" class="card-v p-3 h-100 text-decoration-none text-ink d-flex flex-column justify-content-between hover-lift border">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <i class="bi bi-people-fill fs-4 text-info"></i>
+                            <span class="badge bg-secondary-subtle text-dark rounded-pill">{{ counts.customers }} Total</span>
+                        </div>
+                        <h3 class="h6 fw-bold mb-1">Manage Customers</h3>
+                        <p class="text-smoke mb-0" style="font-size:0.75rem">View customer profiles, orders &amp; status.</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Function 3: Manage Sellers -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'accounts:user_list' %}?role=seller" class="card-v p-3 h-100 text-decoration-none text-ink d-flex flex-column justify-content-between hover-lift border">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <i class="bi bi-shop fs-4 text-success"></i>
+                            <span class="badge bg-success-subtle text-success rounded-pill">{{ counts.sellers }} Active</span>
+                        </div>
+                        <h3 class="h6 fw-bold mb-1">Manage Sellers</h3>
+                        <p class="text-smoke mb-0" style="font-size:0.75rem">Storefront details, sales &amp; inventory.</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Function 4: Approve or Reject Sellers -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'accounts:user_list' %}?role=seller&status=pending" class="card-v p-3 h-100 text-decoration-none text-ink d-flex flex-column justify-content-between hover-lift border">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <i class="bi bi-person-check fs-4 text-warning"></i>
+                            {% if counts.pending %}
+                            <span class="badge bg-danger text-white rounded-pill">{{ counts.pending }} Pending</span>
+                            {% else %}
+                            <span class="badge bg-light text-muted rounded-pill">0 Pending</span>
+                            {% endif %}
+                        </div>
+                        <h3 class="h6 fw-bold mb-1">Approve / Reject Sellers</h3>
+                        <p class="text-smoke mb-0" style="font-size:0.75rem">Review onboarding seller applications.</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Function 5: Manage Product Categories -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'products:admin_categories' %}" class="card-v p-3 h-100 text-decoration-none text-ink d-flex flex-column justify-content-between hover-lift border">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <i class="bi bi-tags-fill fs-4 text-purple" style="color:#6f42c1"></i>
+                            <span class="badge bg-light text-dark rounded-pill">{{ category_count }} Cat</span>
+                        </div>
+                        <h3 class="h6 fw-bold mb-1">Product Categories</h3>
+                        <p class="text-smoke mb-0" style="font-size:0.75rem">Create &amp; organize shop taxonomies.</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Function 6: View and Manage Products -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'products:admin_list' %}" class="card-v p-3 h-100 text-decoration-none text-ink d-flex flex-column justify-content-between hover-lift border">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <i class="bi bi-boxes fs-4 text-primary"></i>
+                            <span class="badge bg-primary-subtle text-primary rounded-pill">{{ product_count }} Items</span>
+                        </div>
+                        <h3 class="h6 fw-bold mb-1">Manage Products</h3>
+                        <p class="text-smoke mb-0" style="font-size:0.75rem">All seller listings, stock &amp; pricing.</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Function 7: Manage Orders -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'console:orders' %}" class="card-v p-3 h-100 text-decoration-none text-ink d-flex flex-column justify-content-between hover-lift border">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <i class="bi bi-bag-check-fill fs-4 text-success"></i>
+                            <span class="badge bg-success-subtle text-success rounded-pill">{{ summary.orders }} Orders</span>
+                        </div>
+                        <h3 class="h6 fw-bold mb-1">Manage Orders</h3>
+                        <p class="text-smoke mb-0" style="font-size:0.75rem">Fulfillment steps &amp; customer orders.</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Function 8: Manage Coupons and Offers -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'console:coupons' %}" class="card-v p-3 h-100 text-decoration-none text-ink d-flex flex-column justify-content-between hover-lift border">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <i class="bi bi-ticket-perforated-fill fs-4 text-danger"></i>
+                            <span class="badge bg-danger-subtle text-danger rounded-pill">{{ coupon_count }} Offers</span>
+                        </div>
+                        <h3 class="h6 fw-bold mb-1">Coupons &amp; Offers</h3>
+                        <p class="text-smoke mb-0" style="font-size:0.75rem">Promotions, discount codes &amp; limits.</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Function 9: Monitor Payments -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'console:payments' %}" class="card-v p-3 h-100 text-decoration-none text-ink d-flex flex-column justify-content-between hover-lift border">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <i class="bi bi-credit-card-2-front-fill fs-4 text-dark"></i>
+                            <span class="badge bg-dark-subtle text-dark rounded-pill">Card &amp; COD</span>
+                        </div>
+                        <h3 class="h6 fw-bold mb-1">Monitor Payments</h3>
+                        <p class="text-smoke mb-0" style="font-size:0.75rem">Payment settlements &amp; transactions.</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Function 10: Manage Reviews -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'products:admin_reviews' %}" class="card-v p-3 h-100 text-decoration-none text-ink d-flex flex-column justify-content-between hover-lift border">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <i class="bi bi-star-half fs-4 text-warning"></i>
+                            <span class="badge bg-warning-subtle text-dark rounded-pill">{{ review_count }} Reviews</span>
+                        </div>
+                        <h3 class="h6 fw-bold mb-1">Manage Reviews</h3>
+                        <p class="text-smoke mb-0" style="font-size:0.75rem">Feedback moderation &amp; ratings.</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Function 11: Block or Unblock Users -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'accounts:user_list' %}?status=blocked" class="card-v p-3 h-100 text-decoration-none text-ink d-flex flex-column justify-content-between hover-lift border">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <i class="bi bi-slash-circle fs-4 text-danger"></i>
+                            <span class="badge bg-danger-subtle text-danger rounded-pill">{{ counts.blocked }} Blocked</span>
+                        </div>
+                        <h3 class="h6 fw-bold mb-1">Block / Unblock Users</h3>
+                        <p class="text-smoke mb-0" style="font-size:0.75rem">Security controls &amp; account bans.</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Function 12: View Sales Reports -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'console:reports' %}" class="card-v p-3 h-100 text-decoration-none text-ink d-flex flex-column justify-content-between hover-lift border">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <i class="bi bi-graph-up fs-4 text-success"></i>
+                            <span class="badge bg-success-subtle text-success rounded-pill">Analytics</span>
+                        </div>
+                        <h3 class="h6 fw-bold mb-1">Sales Reports</h3>
+                        <p class="text-smoke mb-0" style="font-size:0.75rem">Revenue aggregations &amp; history.</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. APPROVE OR REJECT SELLERS SECTION -->
+    {% if pending_sellers %}
+    <div class="card-v p-4 mb-4" style="border: 2px solid var(--gold); background: rgba(184,134,11,0.06)">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="h5 mb-0" style="color:var(--gold)">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Seller Applications Awaiting Approval
+                </h2>
+                <p class="text-smoke small mb-0">{{ counts.pending }} seller account{{ counts.pending|pluralize }} submitted for moderation.</p>
+            </div>
+            <a href="{% url 'accounts:user_list' %}?role=seller&status=pending" class="link-flame small fw-semibold">
+                Manage all pending applications →
+            </a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-v align-middle">
+                <thead>
+                    <tr>
+                        <th>Storefront Name</th>
+                        <th>Seller Name</th>
+                        <th>Email</th>
+                        <th>Application Date</th>
+                        <th class="text-end">Moderation Decision</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for seller in pending_sellers %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'accounts:user_detail' seller.pk %}" class="fw-bold text-ink text-decoration-none">
+                                <i class="bi bi-shop me-1 text-smoke"></i>{{ seller.shop_name|default:"Unnamed Store" }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'accounts:user_detail' seller.pk %}" class="text-ink text-decoration-none">
+                                {{ seller.display_name }}
+                            </a>
+                        </td>
+                        <td class="text-smoke small">{{ seller.email }}</td>
+                        <td class="text-smoke small">{{ seller.date_joined|date:"M j, Y" }}</td>
+                        <td>
+                            <div class="d-flex justify-content-end align-items-center gap-2">
+                                <a href="{% url 'accounts:user_detail' seller.pk %}" class="btn btn-sm btn-outline-ink rounded-pill px-3 py-1">
+                                    <i class="bi bi-person-lines-fill me-1"></i>View Profile
+                                </a>
+                                <form method="post" action="{% url 'accounts:set_user_status' seller.pk 'active' %}" class="m-0">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm text-white rounded-pill px-3 py-1" style="background:var(--moss)" title="Approve this seller">
+                                        <i class="bi bi-check-lg me-1"></i>Approve
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'accounts:set_user_status' seller.pk 'blocked' %}" class="m-0"
+                                    data-confirm="Reject and block {{ seller.display_name }}?">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1" title="Reject seller application">
+                                        <i class="bi bi-x-lg me-1"></i>Reject
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 4. CUSTOMER LIST & SELLER LIST (DUAL INTERACTIVE PANELS WITH PROFILE REDIRECTION) -->
+    <div class="row g-4 mb-4">
+        <!-- CUSTOMER LIST PANEL -->
+        <div class="col-lg-6">
+            <div class="card-v p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h2 class="h5 mb-0"><i class="bi bi-people me-2" style="color:var(--flame)"></i>Customers Directory</h2>
+                        <p class="text-smoke small mb-0">Click any customer to inspect their full profile and order history.</p>
+                    </div>
+                    <a href="{% url 'accounts:user_list' %}?role=customer" class="link-flame small fw-semibold">View All →</a>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table-v align-middle">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Orders</th>
+                                <th>Status</th>
+                                <th class="text-end">Profile</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in recent_customers %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'accounts:user_detail' c.pk %}" class="d-flex align-items-center gap-2 text-decoration-none text-ink">
+                                        <span class="avatar">{{ c.display_name|first|upper }}</span>
+                                        <div>
+                                            <p class="fw-semibold mb-0 text-ink">{{ c.display_name }}</p>
+                                            <p class="text-smoke mb-0" style="font-size:0.72rem">{{ c.email }}</p>
+                                        </div>
+                                    </a>
+                                </td>
+                                <td><span class="small fw-semibold">{{ c.order_count|default:"0" }}</span></td>
+                                <td><span class="pill pill-status-{{ c.status }}">{{ c.get_status_display }}</span></td>
+                                <td class="text-end">
+                                    <a href="{% url 'accounts:user_detail' c.pk %}" class="btn btn-sm btn-outline-ink rounded-pill px-2 py-1" title="View customer profile">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-smoke py-3">No customers registered yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SELLER LIST PANEL -->
+        <div class="col-lg-6">
+            <div class="card-v p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h2 class="h5 mb-0"><i class="bi bi-shop me-2" style="color:var(--flame)"></i>Sellers Directory</h2>
+                        <p class="text-smoke small mb-0">Click any seller to inspect store catalog and revenue.</p>
+                    </div>
+                    <a href="{% url 'accounts:user_list' %}?role=seller" class="link-flame small fw-semibold">View All →</a>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table-v align-middle">
+                        <thead>
+                            <tr>
+                                <th>Storefront / Owner</th>
+                                <th>Products</th>
+                                <th>Status</th>
+                                <th class="text-end">Profile</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in sellers_list %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'accounts:user_detail' s.pk %}" class="d-flex align-items-center gap-2 text-decoration-none text-ink">
+                                        <span class="avatar">{{ s.display_name|first|upper }}</span>
+                                        <div>
+                                            <p class="fw-semibold mb-0 text-ink">{{ s.shop_name|default:s.display_name }}</p>
+                                            <p class="text-smoke mb-0" style="font-size:0.72rem">{{ s.email }}</p>
+                                        </div>
+                                    </a>
+                                </td>
+                                <td><span class="small fw-semibold">{{ s.product_count|default:"0" }}</span></td>
+                                <td><span class="pill pill-status-{{ s.status }}">{{ s.get_status_display }}</span></td>
+                                <td class="text-end">
+                                    <a href="{% url 'accounts:user_detail' s.pk %}" class="btn btn-sm btn-outline-ink rounded-pill px-2 py-1" title="View seller profile">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-smoke py-3">No sellers registered yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. SALES ANALYTICS & STATUS PIPELINE -->
+    <div class="row g-4 mb-4">
+        <!-- 14-day sales trend -->
+        <div class="col-lg-7">
+            <div class="card-v p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h5 mb-0"><i class="bi bi-bar-chart-line me-2"></i>Sales Report — Last 14 Days</h2>
+                    <span class="pill pill-delivered"><i class="bi bi-bag"></i> {{ summary.orders }} total orders</span>
+                </div>
+                <div class="bars dark">
+                    {% for day in chart %}
+                    <div class="bar-col">
+                        <span class="bar-value">${{ day.total|floatformat:0 }}</span>
+                        <div class="bar" style="height:{{ day.total|percent_of:max_chart }}%"></div>
+                        <span class="bar-label">{{ day.label }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="divider my-4"></div>
+                <p class="eyebrow mb-2">Orders Distribution by Status</p>
+                <div class="status-bar">
+                    {% for row in status_rows %}
+                        {% if row.n %}
+                        <span class="st-{{ row.status }}" style="width:{{ row.pct }}%" title="{{ row.label }}: {{ row.n }}"></span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    {% for row in status_rows %}
+                    <span class="d-flex align-items-center gap-1 small">
+                        <span class="pill pill-{{ row.status }}">{{ row.label }}</span>
+                        <b>{{ row.n }}</b>
+                    </span>
+                    {% endfor %}
+                </div>
+                <a href="{% url 'console:reports' %}" class="link-flame small mt-3 d-inline-block">Full revenue reports &amp; history →</a>
+            </div>
+        </div>
+
+        <!-- Top Selling Products -->
+        <div class="col-lg-5">
+            <div class="card-v p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h5 mb-0"><i class="bi bi-trophy me-2" style="color:var(--gold)"></i>Best Selling Products</h2>
+                    <a href="{% url 'products:admin_list' %}" class="link-flame small">Catalog →</a>
+                </div>
+                <div class="d-flex flex-column gap-3">
+                    {% for row in top_products %}
+                    <div class="d-flex align-items-center gap-2 p-2 rounded-3 bg-cream">
+                        <span class="avatar">{{ forloop.counter }}</span>
+                        <span class="flex-grow-1 fw-semibold small text-truncate">{{ row.title }}</span>
+                        <span class="text-smoke small">{{ row.units }} sold · <b class="text-ink">${{ row.revenue|floatformat:2 }}</b></span>
+                    </div>
+                    {% empty %}
+                    <p class="text-smoke small mb-0">No sales transactions registered yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. LATEST MARKETPLACE ORDERS -->
+    <div class="card-v flush table-scroll">
+        <div class="d-flex justify-content-between align-items-center px-4 pt-4">
+            <div>
+                <h2 class="h5 mb-0"><i class="bi bi-receipt me-2"></i>Latest Customer Orders</h2>
+                <p class="text-smoke small mb-0">Recent customer checkouts across all sellers.</p>
+            </div>
+            <a href="{% url 'console:orders' %}" class="link-flame small fw-semibold">Manage all orders →</a>
+        </div>
+        <table class="table-v mt-3">
+            <thead>
+                <tr>
+                    <th>Order Reference</th>
+                    <th>Customer Name</th>
+                    <th>Order Date</th>
+                    <th>Payment Method &amp; Status</th>
+                    <th>Fulfillment Status</th>
+                    <th class="text-end">Order Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in recent_orders %}
+                <tr>
+                    <td class="fw-bold">{{ order.reference }}</td>
+                    <td>
+                        {% if order.user %}
+                        <a href="{% url 'accounts:user_detail' order.user.pk %}" class="text-ink text-decoration-none fw-semibold">
+                            {{ order.user.display_name }}
+                        </a>
+                        {% else %}
+                        <span class="text-smoke">Guest</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-smoke">{{ order.created_at|date:"M j, Y H:i" }}</td>
+                    <td>
+                        <span class="pill pill-{{ order.payment_status }}">
+                            {% if order.payment_method == "cod" %}COD{% else %}Online{% endif %} · {{ order.get_payment_status_display }}
+                        </span>
+                    </td>
+                    <td><span class="pill pill-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                    <td class="text-end fw-bold">${{ order.total }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-smoke py-4">No customer orders placed yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

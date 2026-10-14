@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load rating_tags %}
+
+{% block title %}Shop all products · DJGO{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-4">
+    <!-- header + search -->
+    <div class="mb-4">
+        <p class="eyebrow mb-1" style="color:var(--flame)">The catalog</p>
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-2">
+            <h1 class="h2 mb-0">
+                {% if q %}Results for “{{ q }}”{% elif category %}{{ category.name }}{% else %}All products{% endif %}
+            </h1>
+            <p class="text-smoke small mb-0">{{ total }} item{{ total|pluralize }}</p>
+        </div>
+
+        <form method="get" action="{% url 'products:list' %}" class="position-relative mt-3" style="max-width:34rem">
+            {% if category %}<input type="hidden" name="category" value="{{ category.slug }}">{% endif %}
+            {% if max_price %}<input type="hidden" name="max" value="{{ max_price }}">{% endif %}
+            {% if min_rating %}<input type="hidden" name="rating" value="{{ min_rating }}">{% endif %}
+            {% if availability %}<input type="hidden" name="availability" value="{{ availability }}">{% endif %}
+            {% if sort != "new" %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+            <i class="bi bi-search position-absolute"
+                style="left:1rem;top:50%;transform:translateY(-50%);color:var(--smoke)"></i>
+            <input type="search" name="q" value="{{ q }}" class="form-control rounded-pill ps-5 pe-5 py-2"
+                placeholder="Search headphones, jackets, lamps…">
+            <button type="submit" class="btn btn-dark btn-sm rounded-pill position-absolute"
+                style="right:.3rem;top:50%;transform:translateY(-50%)">Search</button>
+        </form>
+    </div>
+
+    <!-- filters -->
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-4">
+        <span class="eyebrow me-1"><i class="bi bi-sliders me-1"></i>Filters</span>
+
+        <a href="{% add_query category='' %}"
+            class="pill pill-bare border {% if not category %}bg-ink text-white{% endif %}"
+            style="{% if not category %}background:var(--ink);color:#fff;border-color:var(--ink){% else %}background:rgba(255,255,255,.6);border-color:rgba(23,19,12,.15);color:var(--smoke){% endif %}">All</a>
+
+        {% for cat in categories %}
+        <a href="{% add_query category=cat.slug %}" class="pill pill-bare border"
+            style="{% if category.slug == cat.slug %}background:var(--ink);color:#fff;border-color:var(--ink){% else %}background:rgba(255,255,255,.6);border-color:rgba(23,19,12,.15);color:var(--smoke){% endif %}">
+            {{ cat.name }}
+        </a>
+        {% endfor %}
+
+        <span class="vr mx-1" style="height:1rem;opacity:.2"></span>
+
+        {% for p in price_options %}
+        <a href="{% add_query max=p.value %}" class="pill pill-bare border"
+            style="{% if max_price == p.value %}background:var(--flame);color:#fff;border-color:var(--flame){% else %}background:rgba(255,255,255,.6);border-color:rgba(23,19,12,.15);color:var(--smoke){% endif %}">
+            Under ${{ p.label }}
+        </a>
+        {% endfor %}
+
+        {% for r in rating_options %}
+        <a href="{% add_query rating=r.value %}" class="pill pill-bare border"
+            style="{% if min_rating == r.value %}background:var(--gold);color:#fff;border-color:var(--gold){% else %}background:rgba(255,255,255,.6);border-color:rgba(23,19,12,.15);color:var(--smoke){% endif %}">
+            {{ r.label }}★ &amp; up
+        </a>
+        {% endfor %}
+
+        {% for a in availability_options %}
+        <a href="{% add_query availability=a.value %}" class="pill pill-bare border"
+            style="{% if availability == a.value %}background:var(--moss);color:#fff;border-color:var(--moss){% else %}background:rgba(255,255,255,.6);border-color:rgba(23,19,12,.15);color:var(--smoke){% endif %}">
+            {{ a.label }}
+        </a>
+        {% endfor %}
+
+        <span class="vr mx-1" style="height:1rem;opacity:.2"></span>
+
+        <form method="get" class="d-flex align-items-center gap-2 ms-auto small">
+            {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+            {% if category %}<input type="hidden" name="category" value="{{ category.slug }}">{% endif %}
+            {% if max_price %}<input type="hidden" name="max" value="{{ max_price }}">{% endif %}
+            {% if min_rating %}<input type="hidden" name="rating" value="{{ min_rating }}">{% endif %}
+            {% if availability %}<input type="hidden" name="availability" value="{{ availability }}">{% endif %}
+            <label for="sort" class="text-smoke fw-bold mb-0">Sort</label>
+            <select id="sort" name="sort" class="form-select form-select-sm rounded-pill" style="width:auto"
+                data-auto-submit>
+                <option value="new" {% if sort == "new" %}selected{% endif %}>Newest</option>
+                <option value="price-asc" {% if sort == "price-asc" %}selected{% endif %}>Price ↑</option>
+                <option value="price-desc" {% if sort == "price-desc" %}selected{% endif %}>Price ↓</option>
+                <option value="rating" {% if sort == "rating" %}selected{% endif %}>Top rated</option>
+                <option value="title" {% if sort == "title" %}selected{% endif %}>A–Z</option>
+            </select>
+        </form>
+    </div>
+
+    <!-- grid -->
+    {% if products %}
+    <div class="row g-3">
+        {% for product in products %}
+        <div class="col-sm-6 col-lg-3">{% include "products/_card.html" %}</div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card-v empty-state">
+        <span class="icon"><i class="bi bi-box-seam"></i></span>
+        <h2 class="h4">Nothing matches</h2>
+        <p class="text-smoke small mx-auto" style="max-width:26rem">
+            Try widening your search or clearing a filter — new drops land every week.
+        </p>
+        <a href="{% url 'products:list' %}" class="btn btn-dark rounded-pill mt-3 px-4">Clear all filters</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

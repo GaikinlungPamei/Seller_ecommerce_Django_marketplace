@@ -1,0 +1,394 @@
+{% extends "base_seller.html" %}
+{% load rating_tags humanize %}
+
+{% block title %}Dashboard · {{ user.shop_name|default:"Seller Studio" }}{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl pb-5">
+    <!-- Top Action Bar -->
+    <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+        <div>
+            <p class="eyebrow mb-1" style="color:var(--flame)">
+                <i class="bi bi-shop me-1"></i>Seller Fulfilment Desk
+            </p>
+            <h1 class="h2 mb-1">{{ user.shop_name|default:"Store Dashboard" }}</h1>
+            <p class="text-smoke small mb-0">
+                Manage your store catalog, update product prices &amp; stock, accept customer orders, and monitor your revenue.
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'products:seller_create' %}" class="btn btn-flame rounded-pill px-4">
+                <i class="bi bi-plus-lg me-1"></i>Add Product
+            </a>
+            <a href="{% url 'seller:orders' %}" class="btn btn-outline-dark rounded-pill px-3 position-relative">
+                <i class="bi bi-bag me-1"></i>Orders
+                {% if pending_orders_count %}
+                <span class="badge bg-danger rounded-pill ms-1">{{ pending_orders_count }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'accounts:profile' %}" class="btn btn-outline-dark rounded-pill px-3">
+                <i class="bi bi-person-gear me-1"></i>Shop Profile
+            </a>
+        </div>
+    </div>
+
+    <!-- 1. SELLER KPIS & REVENUE STATISTICS -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between">
+                    <span class="eyebrow">Delivered Revenue</span>
+                    <i class="bi bi-cash-stack kpi-icon"></i>
+                </div>
+                <p class="kpi-value">${{ summary.revenue|floatformat:2|intcomma }}</p>
+                <p class="kpi-sub mb-0">${{ summary.pipeline_value|floatformat:2 }} in fulfillment</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between">
+                    <span class="eyebrow">Customer Orders</span>
+                    <i class="bi bi-bag-check kpi-icon"></i>
+                </div>
+                <p class="kpi-value">{{ summary.orders }}</p>
+                <p class="kpi-sub mb-0">{{ summary.units }} units sold</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between">
+                    <span class="eyebrow">Products in Store</span>
+                    <i class="bi bi-box-seam kpi-icon"></i>
+                </div>
+                <p class="kpi-value">{{ products|length }}</p>
+                <p class="kpi-sub mb-0">{{ summary.open_orders }} orders in flight</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between">
+                    <span class="eyebrow">Stock Alerts</span>
+                    <i class="bi bi-exclamation-triangle kpi-icon"></i>
+                </div>
+                <p class="kpi-value" style="color:{% if low_stock %}var(--gold){% else %}var(--moss){% endif %}">
+                    {{ low_stock|length }}
+                </p>
+                <p class="kpi-sub mb-0">
+                    {% if low_stock %}{{ low_stock|length }} item{{ low_stock|length|pluralize }} need restock{% else %}All products well stocked{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. LOW-STOCK ALERTS & DIRECT RESTOCK DESK -->
+    {% if low_stock %}
+    <div class="card-v p-4 mb-4" style="border: 2px solid var(--gold); background: rgba(184,134,11,.08)">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="h5 mb-0" style="color:var(--gold)">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Low-Stock &amp; Depleted Inventory Alerts
+                </h2>
+                <p class="text-smoke small mb-0">The following products have reached or fallen below safety stock thresholds. Restock now to prevent missed sales.</p>
+            </div>
+            <a href="{% url 'products:seller_list' %}" class="link-flame small fw-semibold">Manage all inventory →</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-v align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Current Price</th>
+                        <th>Current Stock</th>
+                        <th>Status</th>
+                        <th class="text-end">Quick Restock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in low_stock %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="{{ p.display_image }}" alt="{{ p.title }}" class="thumb-sm rounded">
+                                <div>
+                                    <a href="{% url 'products:detail' p.pk %}" class="fw-semibold text-ink text-decoration-none">
+                                        {{ p.title }}
+                                    </a>
+                                    <span class="text-smoke d-block" style="font-size:0.7rem">{{ p.category.name|default:"Uncategorized" }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="fw-bold">${{ p.price }}</td>
+                        <td>
+                            {% if p.is_out_of_stock %}
+                            <span class="badge bg-danger text-white">0 (Out of stock)</span>
+                            {% else %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis">{{ p.stock }} remaining</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="pill pill-status-{{ p.status }}">{{ p.get_status_display }}</span></td>
+                        <td>
+                            <form method="post" action="{% url 'products:quick_stock' p.pk %}" class="d-flex justify-content-end align-items-center gap-1 m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <input type="hidden" name="p{{ p.pk }}-price" value="{{ p.price }}">
+                                <input type="number" name="p{{ p.pk }}-stock" min="0" value="{{ p.stock }}"
+                                    class="form-control form-control-sm text-center" style="width:5rem" placeholder="New stock" required>
+                                <button type="submit" class="btn btn-sm btn-dark rounded-pill px-3" title="Update Stock">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Restock
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 3. CUSTOMER ORDERS DESK: ACCEPT AND PROCESS ORDERS -->
+    <div class="card-v flush mb-4 table-scroll">
+        <div class="d-flex flex-wrap justify-content-between align-items-center px-4 pt-4 pb-2">
+            <div>
+                <h2 class="h5 mb-0"><i class="bi bi-box2-heart me-2" style="color:var(--flame)"></i>Customer Orders &amp; Fulfilment Desk</h2>
+                <p class="text-smoke small mb-0">Accept incoming customer purchases and update shipping status step-by-step.</p>
+            </div>
+            <a href="{% url 'seller:orders' %}" class="link-flame small fw-semibold">View all orders ({{ summary.orders }}) →</a>
+        </div>
+
+        <table class="table-v mt-2 align-middle">
+            <thead>
+                <tr>
+                    <th>Order Reference</th>
+                    <th>Customer / Delivery</th>
+                    <th>Date</th>
+                    <th>Items Purchased</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th class="text-end">Fulfillment Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group in recent_orders %}
+                {% with order=group.order %}
+                <tr>
+                    <td>
+                        <span class="fw-bold font-display">{{ order.reference }}</span>
+                    </td>
+                    <td>
+                        <div>
+                            <span class="fw-semibold text-ink d-block">{{ order.ship_name|default:order.user.display_name }}</span>
+                            <span class="text-smoke" style="font-size:0.7rem"><i class="bi bi-geo-alt me-1"></i>{{ order.ship_city|default:order.ship_one_line|truncatechars:25 }}</span>
+                        </div>
+                    </td>
+                    <td class="text-smoke small">{{ order.created_at|date:"M j, Y" }}</td>
+                    <td>
+                        <div>
+                            <span class="small fw-semibold">{{ group.lines|length }} line{{ group.lines|length|pluralize }}</span>
+                            <span class="text-smoke small d-block">${{ group.total|floatformat:2 }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="pill pill-{{ order.payment_status }}">
+                            {% if order.payment_method == "cod" %}COD{% else %}Card{% endif %} · {{ order.get_payment_status_display }}
+                        </span>
+                    </td>
+                    <td><span class="pill pill-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                    <td>
+                        <div class="d-flex justify-content-end align-items-center gap-1">
+                            {% if order.is_open and order.next_status %}
+                            <form method="post" action="{% url 'seller:order_advance' order.pk %}" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="{{ order.next_status }}">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                {% if order.status == "pending" %}
+                                <button type="submit" class="btn btn-sm btn-flame rounded-pill px-3 py-1 fw-semibold" title="Accept customer order">
+                                    <i class="bi bi-check2-circle me-1"></i>Accept Order
+                                </button>
+                                {% elif order.status == "confirmed" %}
+                                <button type="submit" class="btn btn-sm btn-dark rounded-pill px-3 py-1" title="Mark as shipped">
+                                    <i class="bi bi-truck me-1"></i>Mark Shipped
+                                </button>
+                                {% elif order.status == "shipped" %}
+                                <button type="submit" class="btn btn-sm btn-dark rounded-pill px-3 py-1" title="Mark out for delivery">
+                                    <i class="bi bi-box-arrow-right me-1"></i>Out for Delivery
+                                </button>
+                                {% else %}
+                                <button type="submit" class="btn btn-sm text-white rounded-pill px-3 py-1" style="background:var(--moss)" title="Mark delivered">
+                                    <i class="bi bi-check-all me-1"></i>Mark Delivered
+                                </button>
+                                {% endif %}
+                            </form>
+                            {% elif order.status == "delivered" %}
+                            <span class="pill pill-delivered">Fulfilled ✓</span>
+                            {% elif order.status == "cancelled" %}
+                            <span class="pill pill-cancelled">Cancelled</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-smoke py-4">No customer orders yet. When customers purchase from your shop, they will show up here.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 4. PRODUCTS & STOCK MANAGEMENT TABLE (EDIT, DELETE, PRICE & STOCK UPDATE) -->
+    <div class="card-v flush mb-4 table-scroll">
+        <div class="d-flex flex-wrap justify-content-between align-items-center px-4 pt-4 pb-2">
+            <div>
+                <h2 class="h5 mb-0"><i class="bi bi-boxes me-2" style="color:var(--flame)"></i>Manage Products &amp; Inventory</h2>
+                <p class="text-smoke small mb-0">Update prices and stock directly in the table, or edit product details and images.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'products:seller_create' %}" class="btn btn-sm btn-flame rounded-pill px-3">
+                    <i class="bi bi-plus-lg me-1"></i>Add Product
+                </a>
+                <a href="{% url 'products:seller_list' %}" class="link-flame small fw-semibold align-self-center ms-2">
+                    View all products ({{ products|length }}) →
+                </a>
+            </div>
+        </div>
+
+        <table class="table-v mt-2 align-middle">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Update Price ($)</th>
+                    <th>Update Stock (Units)</th>
+                    <th>Inventory Status</th>
+                    <th>Quick Save</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in recent_products %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="{{ product.display_image }}" alt="{{ product.title }}" class="thumb rounded">
+                            <div style="min-width:0">
+                                <a href="{% url 'products:detail' product.pk %}" class="fw-semibold text-ink text-decoration-none d-block text-truncate" style="max-width:14rem">
+                                    {{ product.title }}
+                                </a>
+                                <span class="text-smoke" style="font-size:0.7rem">{{ product.created_at|date:"M j, Y" }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-smoke">{{ product.category.name|default:"—" }}</td>
+                    <td>
+                        <!-- Inline Price Form -->
+                        <form id="prod-form-{{ product.pk }}" method="post" action="{% url 'products:quick_stock' product.pk %}" class="m-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <div class="input-group input-group-sm" style="width:7rem">
+                                <span class="input-group-text">$</span>
+                                <input type="number" name="p{{ product.pk }}-price" step="0.01" min="0.01" value="{{ product.price }}"
+                                    class="form-control form-control-sm" aria-label="Price" required>
+                            </div>
+                        </form>
+                    </td>
+                    <td>
+                        <!-- Inline Stock input attached to prod-form-{{ product.pk }} -->
+                        <div style="width:6rem">
+                            <input type="number" form="prod-form-{{ product.pk }}" name="p{{ product.pk }}-stock" min="0" value="{{ product.stock }}"
+                                class="form-control form-control-sm" aria-label="Stock" required>
+                        </div>
+                    </td>
+                    <td>
+                        {% if product.is_out_of_stock %}
+                        <span class="badge bg-danger text-white">Out of stock</span>
+                        {% elif product.is_low_stock %}
+                        <span class="badge bg-warning-subtle text-warning-emphasis">{{ product.stock }} left (Low)</span>
+                        {% else %}
+                        <span class="badge bg-success-subtle text-success">{{ product.stock }} in stock</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button type="submit" form="prod-form-{{ product.pk }}" class="btn btn-sm btn-outline-ink rounded-pill px-3" title="Save price and stock">
+                            <i class="bi bi-check-lg me-1"></i>Save
+                        </button>
+                    </td>
+                    <td>
+                        <div class="d-flex justify-content-end align-items-center gap-1">
+                            <a href="{% url 'products:seller_update' product.pk %}" class="btn btn-sm btn-outline-dark rounded-circle p-1" style="width:2rem;height:2rem" title="Edit full details &amp; image">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="post" action="{% url 'products:seller_delete' product.pk %}" class="m-0"
+                                data-confirm="Delete listing “{{ product.title }}”? This cannot be undone.">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-1" style="width:2rem;height:2rem" title="Delete product">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-smoke py-4">No products in your catalog yet. Click "+ Add Product" above to publish your first item!</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 5. REVENUE & BEST SELLERS SECTION -->
+    <div class="row g-4">
+        <!-- 7-day revenue trend -->
+        <div class="col-lg-7">
+            <div class="card-v p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h2 class="h5 mb-0"><i class="bi bi-graph-up me-2"></i>Daily Revenue (Last 7 Days)</h2>
+                        <p class="text-smoke small mb-0">Delivered sales performance across your store.</p>
+                    </div>
+                    <a href="{% url 'seller:sales' %}" class="link-flame small fw-semibold">Detailed sales reports →</a>
+                </div>
+                {% if chart %}
+                <div class="bars">
+                    {% for day in chart %}
+                    <div class="bar-col">
+                        <span class="bar-value">${{ day.total|floatformat:0 }}</span>
+                        <div class="bar" style="height:{{ day.total|percent_of:max_chart }}%"></div>
+                        <span class="bar-label">{{ day.label }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-smoke small mb-0">No sales transactions in the last 7 days yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Best Selling Products -->
+        <div class="col-lg-5">
+            <div class="card-v p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h5 mb-0"><i class="bi bi-trophy me-2" style="color:var(--gold)"></i>Top Selling Products</h2>
+                    <span class="text-smoke small">By delivered volume</span>
+                </div>
+                <div class="d-flex flex-column gap-3">
+                    {% for row in top_products %}
+                    <div class="d-flex align-items-center gap-3 p-2 rounded-3 bg-cream">
+                        <span class="avatar">{{ forloop.counter }}</span>
+                        <span class="flex-grow-1 fw-semibold small text-truncate">{{ row.title }}</span>
+                        <span class="text-smoke small">{{ row.units }} sold · <b class="text-ink">${{ row.revenue|floatformat:2 }}</b></span>
+                    </div>
+                    {% empty %}
+                    <p class="text-smoke small mb-0">No delivered sales completed yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

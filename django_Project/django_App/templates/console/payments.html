@@ -1,0 +1,83 @@
+{% extends "base_admin.html" %}
+{% load humanize %}
+
+{% block title %}Monitor payments · Admin Console{% endblock %}
+{% block nav_payments %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+    <p class="eyebrow mb-1" style="color:var(--flame)">Finance</p>
+    <h1 class="h2 mb-1">Monitor payments</h1>
+    <p class="text-smoke small mb-4">Every transaction across both payment methods, with collection status.</p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100"><span class="eyebrow">Collected</span>
+                <p class="kpi-value" style="color:var(--moss)">${{ totals.collected|floatformat:2|intcomma }}</p>
+                <p class="kpi-sub mb-0">Online + cash on delivery received</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100"><span class="eyebrow">Pending</span>
+                <p class="kpi-value" style="color:var(--gold)">${{ totals.pending|floatformat:2|intcomma }}</p>
+                <p class="kpi-sub mb-0">Cash on delivery not yet collected</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100"><span class="eyebrow">Refunded</span>
+                <p class="kpi-value" style="color:var(--flame)">${{ totals.refunded|floatformat:2|intcomma }}</p>
+                <p class="kpi-sub mb-0">Returned to the original method</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100"><span class="eyebrow">Transactions</span>
+                <p class="kpi-value">{{ orders|length|intcomma }}</p>
+                <p class="kpi-sub mb-0">Most recent orders shown below</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-v flush table-scroll">
+        <table class="table-v">
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Method</th>
+                    <th>Gateway ref</th>
+                    <th>Payment status</th>
+                    <th>Order status</th>
+                    <th class="text-end">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td class="fw-bold">{{ order.reference }}</td>
+                    <td>{{ order.user.display_name }}</td>
+                    <td class="text-smoke">{{ order.created_at|date:"M j, Y H:i" }}</td>
+                    <td>
+                        <span class="pill pill-bare" style="background:rgba(23,19,12,.06);color:var(--smoke)">
+                            <i
+                                class="bi {% if order.payment_method == 'cod' %}bi-cash-coin{% else %}bi-credit-card{% endif %}"></i>
+                            {{ order.get_payment_method_display }}
+                        </span>
+                    </td>
+                    <td class="text-smoke" style="font-size:.72rem"><code>{{ order.payment_ref|default:"—" }}</code>
+                    </td>
+                    <td><span class="pill pill-{{ order.payment_status }}">{{ order.get_payment_status_display }}</span>
+                    </td>
+                    <td><span class="pill pill-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                    <td class="text-end fw-bold">${{ order.total }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center text-smoke py-4">No payments recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

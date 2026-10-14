@@ -1,0 +1,290 @@
+{% extends "base_seller.html" %}
+{% load rating_tags humanize %}
+
+{% block title %}Inventory &amp; Stock Management · Seller Studio{% endblock %}
+{% block nav_products %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl pb-5">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+        <div>
+            <p class="eyebrow mb-1" style="color:var(--flame)">
+                <i class="bi bi-boxes me-1"></i>Product &amp; Inventory Management
+            </p>
+            <h1 class="h2 mb-1">Store Inventory <span class="text-smoke">({{ total_count }})</span></h1>
+            <p class="text-smoke small mb-0">
+                Manage your product catalogue, stock levels, real-time pricing, categories, and customer ratings.
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'products:seller_create' %}" class="btn btn-flame rounded-pill px-4">
+                <i class="bi bi-plus-lg me-1"></i>Add Product
+            </a>
+            <a href="{% url 'seller:reviews' %}" class="btn btn-outline-dark rounded-pill px-3">
+                <i class="bi bi-star me-1"></i>Customer Reviews
+            </a>
+        </div>
+    </div>
+
+    <!-- Low Stock Alert Banner -->
+    {% if low_stock %}
+    <div class="card-v p-3 mb-4" style="border: 2px solid var(--gold); background: rgba(184,134,11,.08)">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+            <p class="fw-bold small mb-0" style="color:var(--gold)">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>Low-Stock &amp; Depleted Inventory Alerts ({{ low_stock|length }})
+            </p>
+            <span class="text-smoke small">Safety threshold: 5 units</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            {% for p in low_stock %}
+            <a href="{% url 'products:seller_update' p.pk %}" class="pill pill-bare d-inline-flex align-items-center gap-2"
+                style="background:rgba(255,255,255,.9); color:var(--ink); border:1px solid rgba(184,134,11,.3)">
+                <span class="fw-semibold">{{ p.title }}</span>
+                {% if p.is_out_of_stock %}
+                <span class="badge bg-danger text-white rounded-pill" style="font-size:0.68rem">Out of stock</span>
+                {% else %}
+                <span class="badge bg-warning text-dark rounded-pill" style="font-size:0.68rem">{{ p.stock }} remaining</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Search & Multi-Filter Control Panel -->
+    <div class="card-v p-3 mb-4">
+        <form method="get" class="row g-2 align-items-end">
+            <!-- Search Query -->
+            <div class="col-md-3">
+                <label for="q" class="form-label small fw-semibold text-smoke mb-1">
+                    <i class="bi bi-search me-1"></i>Search Products
+                </label>
+                <input type="text" id="q" name="q" value="{{ q }}" class="form-control form-control-sm rounded-pill"
+                    placeholder="Search title, description...">
+            </div>
+
+            <!-- Category Filter -->
+            <div class="col-md-2 col-sm-6">
+                <label for="category" class="form-label small fw-semibold text-smoke mb-1">
+                    <i class="bi bi-tag me-1"></i>Category
+                </label>
+                <select id="category" name="category" class="form-select form-select-sm rounded-pill">
+                    <option value="">All Categories</option>
+                    {% for c in categories %}
+                    <option value="{{ c.slug }}" {% if category_slug == c.slug %}selected{% endif %}>
+                        {{ c.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Stock Availability Filter -->
+            <div class="col-md-2 col-sm-6">
+                <label for="stock_status" class="form-label small fw-semibold text-smoke mb-1">
+                    <i class="bi bi-box-seam me-1"></i>Stock &amp; Availability
+                </label>
+                <select id="stock_status" name="stock_status" class="form-select form-select-sm rounded-pill">
+                    <option value="">All Availability</option>
+                    <option value="in_stock" {% if stock_status == 'in_stock' %}selected{% endif %}>In Stock (&ge;5 units)</option>
+                    <option value="low_stock" {% if stock_status == 'low_stock' %}selected{% endif %}>Low Stock (&lt;5 units)</option>
+                    <option value="out_of_stock" {% if stock_status == 'out_of_stock' %}selected{% endif %}>Out of Stock (0 units)</option>
+                    <option value="active" {% if stock_status == 'active' %}selected{% endif %}>Active Listings</option>
+                    <option value="inactive" {% if stock_status == 'inactive' %}selected{% endif %}>Inactive Listings</option>
+                </select>
+            </div>
+
+            <!-- Rating Filter -->
+            <div class="col-md-1 col-sm-4">
+                <label for="rating" class="form-label small fw-semibold text-smoke mb-1">
+                    <i class="bi bi-star me-1"></i>Rating
+                </label>
+                <select id="rating" name="rating" class="form-select form-select-sm rounded-pill">
+                    <option value="">Any</option>
+                    <option value="4" {% if rating_filter == '4' %}selected{% endif %}>4★ &amp; up</option>
+                    <option value="3" {% if rating_filter == '3' %}selected{% endif %}>3★ &amp; up</option>
+                    <option value="2" {% if rating_filter == '2' %}selected{% endif %}>2★ &amp; up</option>
+                    <option value="1" {% if rating_filter == '1' %}selected{% endif %}>1★ &amp; up</option>
+                </select>
+            </div>
+
+            <!-- Price Range -->
+            <div class="col-md-2 col-sm-8">
+                <label class="form-label small fw-semibold text-smoke mb-1">Price Range ($)</label>
+                <div class="d-flex align-items-center gap-1">
+                    <input type="number" step="0.01" min="0" name="min_price" value="{{ min_price }}"
+                           class="form-control form-control-sm rounded-pill" placeholder="Min">
+                    <span class="text-muted small">-</span>
+                    <input type="number" step="0.01" min="0" name="max_price" value="{{ max_price }}"
+                           class="form-control form-control-sm rounded-pill" placeholder="Max">
+                </div>
+            </div>
+
+            <!-- Sort By -->
+            <div class="col-md-1 col-sm-6">
+                <label for="sort" class="form-label small fw-semibold text-smoke mb-1">Sort</label>
+                <select id="sort" name="sort" class="form-select form-select-sm rounded-pill">
+                    <option value="-created_at" {% if sort == '-created_at' %}selected{% endif %}>Newest</option>
+                    <option value="created_at" {% if sort == 'created_at' %}selected{% endif %}>Oldest</option>
+                    <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price: Low</option>
+                    <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price: High</option>
+                    <option value="stock_asc" {% if sort == 'stock_asc' %}selected{% endif %}>Stock: Low</option>
+                    <option value="stock_desc" {% if sort == 'stock_desc' %}selected{% endif %}>Stock: High</option>
+                    <option value="rating_desc" {% if sort == 'rating_desc' %}selected{% endif %}>Top Rated</option>
+                </select>
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="col-md-1 col-sm-6 d-flex gap-1">
+                <button type="submit" class="btn btn-sm btn-dark rounded-pill w-100" title="Apply Filters">
+                    Filter
+                </button>
+                {% if q or category_slug or min_price or max_price or rating_filter or stock_status %}
+                <a href="{% url 'products:seller_list' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-2" title="Reset Filters">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Products Table -->
+    {% if products %}
+    <div class="card-v flush table-scroll shadow-sm">
+        <table class="table-v align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="min-width:16rem">Product</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock &amp; Availability</th>
+                    <th>Rating</th>
+                    <th>Status</th>
+                    <th style="min-width:14rem">Quick Stock &amp; Price Update</th>
+                    <th class="text-end" style="min-width:7rem">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="{{ product.display_image }}" alt="{{ product.title }}" class="thumb rounded-2 border" style="width:3.2rem;height:3.2rem;object-fit:cover">
+                            <div style="min-width:0">
+                                <a href="{{ product.get_absolute_url }}" target="_blank" class="fw-semibold d-block text-truncate text-dark text-decoration-none hover-flame"
+                                    style="max-width:14rem" title="{{ product.title }}">
+                                    {{ product.title }}
+                                </a>
+                                <span class="text-smoke" style="font-size:.72rem">
+                                    Added {{ product.created_at|date:"M j, Y" }}
+                                </span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if product.category %}
+                        <span class="badge bg-light text-dark border rounded-pill">{{ product.category.name }}</span>
+                        {% else %}
+                        <span class="text-smoke small">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="fw-bold">${{ product.price }}</td>
+                    <td>
+                        <div class="d-flex flex-column gap-1">
+                            <span class="fw-bold fs-6"
+                                style="color:{% if product.is_out_of_stock %}var(--flame){% elif product.is_low_stock %}var(--gold){% else %}var(--moss){% endif %}">
+                                {{ product.stock }} unit{{ product.stock|pluralize }}
+                            </span>
+                            {% if product.is_out_of_stock %}
+                            <span class="badge bg-danger-subtle text-danger rounded-pill" style="font-size:0.68rem;width:fit-content">
+                                Out of Stock
+                            </span>
+                            {% elif product.is_low_stock %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill" style="font-size:0.68rem;width:fit-content">
+                                Low Stock
+                            </span>
+                            {% else %}
+                            <span class="badge bg-success-subtle text-success rounded-pill" style="font-size:0.68rem;width:fit-content">
+                                In Stock
+                            </span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        {% if product.review_count %}
+                        <a href="{% url 'seller:reviews' %}?q={{ product.title|urlencode }}" class="text-decoration-none">
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="bi bi-star-fill text-warning" style="font-size:0.85rem"></i>
+                                <span class="fw-bold small">{{ product.avg_rating|floatformat:1 }}</span>
+                                <span class="text-smoke small">({{ product.review_count }})</span>
+                            </div>
+                        </a>
+                        {% else %}
+                        <span class="text-smoke small">No reviews yet</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="pill pill-{{ product.status }}">{{ product.get_status_display }}</span>
+                    </td>
+                    <td>
+                        <!-- Inline Quick Stock / Price Form -->
+                        <form method="post" action="{% url 'products:quick_stock' product.pk %}"
+                            class="d-flex align-items-center gap-1 m-0">
+                            {% csrf_token %}
+                            <div class="input-group input-group-sm" style="width:7.2rem">
+                                <span class="input-group-text">$</span>
+                                <input type="number" name="p{{ product.pk }}-price" step="0.01" min="0.01"
+                                    value="{{ product.price }}" class="form-control form-control-sm"
+                                    aria-label="Price" title="Update Price">
+                            </div>
+                            <div class="input-group input-group-sm" style="width:5.5rem">
+                                <input type="number" name="p{{ product.pk }}-stock" min="0" value="{{ product.stock }}"
+                                    class="form-control form-control-sm" aria-label="Stock" title="Update Stock">
+                                <span class="input-group-text px-1" style="font-size:0.7rem">qty</span>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-dark rounded-pill px-2"
+                                title="Save price and stock changes">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        </form>
+                    </td>
+                    <td>
+                        <div class="d-flex justify-content-end gap-1">
+                            <a href="{% url 'products:seller_update' product.pk %}" class="btn btn-sm btn-outline-dark rounded-pill px-2" title="Edit Product details">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="post" action="{% url 'products:seller_delete' product.pk %}" class="m-0"
+                                data-confirm="Delete “{{ product.title }}”? This cannot be undone.">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Delete product">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card-v empty-state p-5 text-center">
+        <span class="icon fs-1 text-muted mb-3"><i class="bi bi-box-seam"></i></span>
+        <h2 class="h4">No products found</h2>
+        <p class="text-smoke small mx-auto mb-3" style="max-width:28rem">
+            {% if q or category_slug or min_price or max_price or rating_filter or stock_status %}
+            No products matched your search filters. Try clearing your search or adjusting your filters.
+            <div class="mt-2">
+                <a href="{% url 'products:seller_list' %}" class="btn btn-sm btn-outline-dark rounded-pill px-3">Clear all filters</a>
+            </div>
+            {% else %}
+            You haven't listed any products in your store yet. Publish your first item to start selling!
+            <div class="mt-2">
+                <a href="{% url 'products:seller_create' %}" class="btn btn-flame rounded-pill px-4">Add your first product</a>
+            </div>
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

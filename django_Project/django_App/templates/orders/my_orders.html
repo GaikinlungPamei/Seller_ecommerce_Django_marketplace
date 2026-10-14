@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load rating_tags %}
+
+{% block title %}My orders · VENDRO{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-4">
+    <p class="eyebrow mb-1" style="color:var(--flame)">Customer account</p>
+    <h1 class="h2 mb-1">Orders &amp; tracking</h1>
+    <p class="text-smoke small mb-4">Track every parcel, cancel recent orders and review delivered purchases.</p>
+
+    {% if orders %}
+    <div class="d-flex flex-column gap-4">
+        {% for order in orders %}
+        <article class="card-v flush">
+            <!-- header -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-4 py-3 bg-cream"
+                style="border-bottom:1px solid rgba(23,19,12,.1)">
+                <div>
+                    <p class="font-display fw-bold mb-0" style="font-size:1.15rem">{{ order.reference }}</p>
+                    <p class="text-smoke mb-0" style="font-size:.72rem">
+                        {{ order.created_at|date:"M j, Y" }} ·
+                        {% if order.payment_method == "cod" %}Cash on delivery{% else %}Paid online{% endif %} ·
+                        {{ order.items.count }} line{{ order.items.count|pluralize }}
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <span class="pill pill-{{ order.payment_status }}">{{ order.get_payment_status_display }}</span>
+                    <span class="pill pill-{{ order.status }}">{{ order.get_status_display }}</span>
+                </div>
+            </div>
+
+            <!-- tracker -->
+            <div class="px-4 py-3">
+                {% if order.status == "cancelled" %}
+                <p class="rounded-3 px-3 py-2 small fw-semibold mb-0 d-flex align-items-center gap-2"
+                    style="background:rgba(199,72,29,.1);color:var(--flame)">
+                    <i class="bi bi-x-circle"></i>
+                    This order was cancelled.{% if order.payment_status == "refunded" %} Your payment has been
+                    refunded.{% endif %}
+                </p>
+                {% else %}
+                <div class="tracker">
+                    {% for step in steps %}
+                    <div class="step {% if forloop.counter0 <= order.progress_index %}done{% endif %}">
+                        <span class="dot-step">{% if forloop.counter0 <= order.progress_index %}<i
+                                class="bi bi-check-lg"></i>{% endif %}</span>
+                        <span class="step-label">{{ labels|lookup:step }}</span>
+                    </div>
+                    {% if not forloop.last %}
+                    <div class="line {% if forloop.counter0 < order.progress_index %}done{% endif %}"></div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- items -->
+            <div class="px-4 pb-3 d-flex flex-column gap-2">
+                {% for item in order.items.all %}
+                <div class="d-flex align-items-center gap-2 rounded-3 p-2 bg-cream">
+                    <img src="{{ item.image }}" alt="{{ item.title }}" class="thumb-sm">
+                    <a href="{% url 'products:detail' item.product_id %}"
+                        class="flex-grow-1 fw-semibold small text-truncate">{{ item.title }}
+                        <span class="text-smoke">× {{ item.quantity }}</span></a>
+                    {% if order.status == "delivered" and item.product_id not in reviewed_ids %}
+                    <a href="{% url 'products:detail' item.product_id %}" class="small fw-bold"
+                        style="color:var(--gold)">
+                        <i class="bi bi-star"></i> Review
+                    </a>
+                    {% endif %}
+                    <span class="fw-bold small">${{ item.line_total }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- footer -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-4 py-3"
+                style="border-top:1px solid rgba(23,19,12,.1)">
+                <p class="text-smoke mb-0" style="font-size:.72rem">
+                    <i class="bi bi-geo-alt me-1"></i>{{ order.ship_one_line }}
+                </p>
+                <div class="d-flex align-items-center gap-3">
+                    <p class="mb-0 small"><span class="text-smoke">Total </span>
+                        <span class="price" style="font-size:1.15rem">${{ order.total }}</span>
+                    </p>
+                    <a href="{% url 'orders:detail' order.pk %}"
+                        class="btn btn-sm btn-outline-ink rounded-pill px-3">Track</a>
+                    {% if order.is_cancellable %}
+                    <form method="post" action="{% url 'orders:cancel' order.pk %}" class="m-0"
+                        data-confirm="Cancel order {{ order.reference }}? Stock will be restored.">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit" class="btn btn-sm rounded-pill px-3"
+                            style="border:1px solid rgba(199,72,29,.4);color:var(--flame)">Cancel order</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card-v empty-state">
+        <span class="icon"><i class="bi bi-box-seam"></i></span>
+        <h2 class="h4">No orders yet</h2>
+        <p class="text-smoke small mx-auto" style="max-width:26rem">Your placed orders and their live tracking will
+            appear here.</p>
+        <a href="{% url 'products:list' %}" class="btn btn-dark rounded-pill mt-3 px-4">Shop now</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "base_seller.html" %}
+
+{% block title %}{% if product %}Edit {{ product.title }}{% else %}Add New Product{% endif %} · Seller Studio{% endblock %}
+{% block nav_add_product %}{% if not product %}active{% endif %}{% endblock %}
+{% block nav_products %}{% if product %}active{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-xxl pb-5">
+    <div style="max-width:48rem">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a href="{% url 'products:seller_list' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i>Back to Inventory
+            </a>
+            <span class="text-smoke">/</span>
+            <span class="text-smoke small">{% if product %}Editing Listing #{{ product.pk }}{% else %}New Product Listing{% endif %}</span>
+        </div>
+
+        <p class="eyebrow mb-1" style="color:var(--flame)">
+            <i class="bi bi-box-seam me-1"></i>Catalogue Editor
+        </p>
+        <h1 class="h2 mb-1">{{ mode }}</h1>
+        <p class="text-smoke small mb-4">
+            {% if product %}Update pricing, stock levels, imagery or visibility for this product listing.{% else %}Fill in the details below to add a new product to your seller catalogue.{% endif %}
+        </p>
+
+        {% if product and product.is_low_stock %}
+        <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <div><strong>Low-stock alert:</strong> {% if product.is_out_of_stock %}This product is currently out of stock{% else %}Only {{ product.stock }} units remaining{% endif %}. Update stock below to prevent missed customer orders.</div>
+        </div>
+        {% endif %}
+
+        <div class="card-v p-4 shadow-sm">
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="{{ form.title.id_for_label }}">Product Title *</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}<div class="text-danger small mt-1">{{ form.title.errors|striptags }}</div>{% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="{{ form.description.id_for_label }}">Description &amp; Specifications *</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors|striptags }}</div>{% endif %}
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-4">
+                        <label class="form-label fw-semibold" for="{{ form.price.id_for_label }}">Price (USD) *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.price }}
+                        </div>
+                        {% if form.price.errors %}<div class="text-danger small mt-1">{{ form.price.errors|striptags }}</div>{% endif %}
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label fw-semibold" for="{{ form.stock.id_for_label }}">Available Stock (units) *</label>
+                        {{ form.stock }}
+                        {% if form.stock.errors %}<div class="text-danger small mt-1">{{ form.stock.errors|striptags }}</div>{% endif %}
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label fw-semibold" for="{{ form.category.id_for_label }}">Product Category *</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}<div class="text-danger small mt-1">{{ form.category.errors|striptags }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="{{ form.image.id_for_label }}">Product Image Upload</label>
+                    {{ form.image }}
+                    <div class="form-text small text-smoke">Upload a high-resolution JPG, PNG or WebP image.</div>
+                    {% if form.image.errors %}<div class="text-danger small mt-1">{{ form.image.errors|striptags }}</div>{% endif %}
+                    {% if product and product.image %}
+                    <div class="d-flex align-items-center gap-3 mt-3 p-2 rounded-2 bg-light border" style="width:fit-content">
+                        <img src="{{ product.image.url }}" alt="Current image" class="thumb rounded" style="width:4rem;height:4rem;object-fit:cover">
+                        <div>
+                            <span class="small fw-semibold d-block text-dark">Current image uploaded</span>
+                            <span class="text-muted small">Choose a new file above only if you want to replace it.</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold" for="{{ form.status.id_for_label }}">Storefront Status &amp; Visibility</label>
+                    {{ form.status }}
+                    <div class="form-text small text-smoke">Active listings are immediately visible and purchasable in the storefront. Inactive listings are hidden.</div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-flex align-items-center gap-3">
+                    <button type="submit" class="btn btn-flame rounded-pill px-4">
+                        <i class="bi bi-check2 me-1"></i>{% if product %}Save Product Changes{% else %}Publish Product{% endif %}
+                    </button>
+                    <a href="{% url 'products:seller_list' %}" class="btn btn-outline-dark rounded-pill px-4">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

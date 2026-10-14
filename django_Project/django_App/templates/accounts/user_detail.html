@@ -1,0 +1,345 @@
+{% extends "base_admin.html" %}
+{% load rating_tags humanize %}
+
+{% block title %}
+{% if is_admin %}{{ target.display_name }} · Administrator Profile{% elif is_seller %}{{ target.shop_name|default:target.display_name }} · Seller Profile{% else %}{{ target.display_name }} · Customer Profile{% endif %} · Admin Console
+{% endblock %}
+
+{% block nav_users %}active{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+    <!-- Breadcrumb & Top bar -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'accounts:user_list' %}?role={{ target.role }}" class="link-flame small fw-semibold">
+                    ← Back to {% if is_seller %}Sellers{% else %}Customers{% endif %}
+                </a>
+                <span class="text-smoke">/</span>
+                <span class="text-smoke small">Profile #{{ target.pk }}</span>
+            </div>
+            <h1 class="h2 mb-0">
+                {% if is_seller %}
+                    {{ target.shop_name|default:target.display_name }}
+                    <span class="fs-6 text-smoke fw-normal">({{ target.display_name }})</span>
+                {% else %}
+                    {{ target.display_name }}
+                {% endif %}
+            </h1>
+        </div>
+
+        <!-- Moderation Actions -->
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            {% if target.status == "pending" %}
+            <form method="post" action="{% url 'accounts:set_user_status' target.pk 'active' %}" class="m-0">
+                {% csrf_token %}
+                <button class="btn btn-sm text-white rounded-pill px-3 py-2 fw-semibold" style="background:var(--moss)">
+                    <i class="bi bi-check-circle me-1"></i>Approve Seller
+                </button>
+            </form>
+            <form method="post" action="{% url 'accounts:set_user_status' target.pk 'blocked' %}" class="m-0"
+                data-confirm="Reject and block {{ target.display_name }}?">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger rounded-pill px-3 py-2 fw-semibold">
+                    <i class="bi bi-x-circle me-1"></i>Reject &amp; Block
+                </button>
+            </form>
+            {% elif target.status == "active" and target != user %}
+            <form method="post" action="{% url 'accounts:set_user_status' target.pk 'blocked' %}" class="m-0"
+                data-confirm="Block {{ target.display_name }}? They will be signed out immediately.">
+                {% csrf_token %}
+                <button class="btn btn-sm rounded-pill px-3 py-2 fw-semibold"
+                    style="background:rgba(199,72,29,.12);color:var(--flame)">
+                    <i class="bi bi-slash-circle me-1"></i>Block Account
+                </button>
+            </form>
+            {% elif target.status == "blocked" %}
+            <form method="post" action="{% url 'accounts:set_user_status' target.pk 'active' %}" class="m-0">
+                {% csrf_token %}
+                <button class="btn btn-sm text-white rounded-pill px-3 py-2 fw-semibold" style="background:var(--moss)">
+                    <i class="bi bi-unlock me-1"></i>Unblock Account
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- User Profile Overview Card -->
+    <div class="card-v p-4 mb-4">
+        <div class="row g-4 align-items-center">
+            <div class="col-auto">
+                <div class="avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                     style="width:4.5rem;height:4.5rem;font-size:1.8rem;background:var(--ink)">
+                    {{ target.display_name|first|upper }}
+                </div>
+            </div>
+            <div class="col">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <h2 class="h4 mb-0">{{ target.display_name }}</h2>
+                    <span class="pill pill-{{ target.role }}">{{ target.get_role_display }}</span>
+                    <span class="pill pill-status-{{ target.status }}">{{ target.get_status_display }}</span>
+                    {% if target.is_superuser %}<span class="badge bg-dark rounded-pill">Superuser</span>{% endif %}
+                </div>
+                <div class="row g-2 text-smoke small">
+                    <div class="col-sm-6 col-md-3">
+                        <i class="bi bi-envelope me-1"></i><b>Email:</b> {{ target.email|default:"—" }}
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <i class="bi bi-telephone me-1"></i><b>Phone:</b> {{ target.phone|default:"—" }}
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <i class="bi bi-calendar3 me-1"></i><b>Joined:</b> {{ target.date_joined|date:"M j, Y" }}
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <i class="bi bi-clock-history me-1"></i><b>Last Login:</b> {{ target.last_login|date:"M j, Y H:i"|default:"Never" }}
+                    </div>
+                    {% if is_seller and target.shop_name %}
+                    <div class="col-12 mt-2">
+                        <i class="bi bi-shop me-1 text-ink"></i><b>Storefront:</b> <span class="text-ink fw-semibold">{{ target.shop_name }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if is_customer %}
+    <!-- CUSTOMER PROFILE SPECIFICS -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between"><span class="eyebrow">Total Orders</span><i class="bi bi-bag kpi-icon"></i></div>
+                <p class="kpi-value">{{ order_count }}</p>
+                <p class="kpi-sub mb-0">Completed purchases</p>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between"><span class="eyebrow">Total Spent</span><i class="bi bi-cash-stack kpi-icon"></i></div>
+                <p class="kpi-value">${{ total_spent|floatformat:2|intcomma }}</p>
+                <p class="kpi-sub mb-0">Delivered order volume</p>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between"><span class="eyebrow">Reviews Written</span><i class="bi bi-star kpi-icon"></i></div>
+                <p class="kpi-value">{{ review_count }}</p>
+                <p class="kpi-sub mb-0">Product feedback submitted</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Order History -->
+    <div class="card-v flush mb-4 table-scroll">
+        <div class="d-flex justify-content-between align-items-center px-4 pt-4 pb-2">
+            <h2 class="h5 mb-0"><i class="bi bi-bag-check me-2"></i>Order History</h2>
+            <span class="text-smoke small">{{ order_count }} order{{ order_count|pluralize }}</span>
+        </div>
+        <table class="table-v mt-2">
+            <thead>
+                <tr>
+                    <th>Order Ref</th>
+                    <th>Date</th>
+                    <th>Items</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th class="text-end">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td class="fw-bold">{{ order.reference }}</td>
+                    <td class="text-smoke">{{ order.created_at|date:"M j, Y H:i" }}</td>
+                    <td>{{ order.items.count }} item{{ order.items.count|pluralize }}</td>
+                    <td>
+                        <span class="pill pill-{{ order.payment_status }}">
+                            {% if order.payment_method == "cod" %}COD{% else %}Card{% endif %} · {{ order.get_payment_status_display }}
+                        </span>
+                    </td>
+                    <td><span class="pill pill-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                    <td class="text-end fw-bold">${{ order.total }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-smoke py-4">This customer has not placed any orders yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Customer Reviews -->
+    {% if reviews %}
+    <div class="card-v p-4 mb-4">
+        <h2 class="h5 mb-3"><i class="bi bi-star-fill me-2" style="color:var(--gold)"></i>Submitted Reviews ({{ review_count }})</h2>
+        <div class="d-flex flex-column gap-3">
+            {% for r in reviews %}
+            <div class="p-3 rounded-3 bg-cream d-flex justify-content-between align-items-start gap-3">
+                <div>
+                    <a href="{% url 'products:detail' r.product.pk %}" class="fw-semibold text-ink text-decoration-none d-block mb-1">
+                        {{ r.product.title }}
+                    </a>
+                    <div class="text-warning small mb-2">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= r.rating %}★{% else %}☆{% endif %}
+                        {% endfor %}
+                        <span class="text-smoke ms-1">{{ r.rating }}/5</span>
+                    </div>
+                    <p class="mb-0 text-ink small">{{ r.comment }}</p>
+                </div>
+                <span class="text-smoke small flex-shrink-0">{{ r.created_at|date:"M j, Y" }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% elif is_seller %}
+    <!-- SELLER PROFILE SPECIFICS -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between"><span class="eyebrow">Products</span><i class="bi bi-box kpi-icon"></i></div>
+                <p class="kpi-value">{{ product_count }}</p>
+                <p class="kpi-sub mb-0">Active inventory listings</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between"><span class="eyebrow">Delivered Sales</span><i class="bi bi-cash-stack kpi-icon"></i></div>
+                <p class="kpi-value">${{ delivered_sales|floatformat:2|intcomma }}</p>
+                <p class="kpi-sub mb-0">Total revenue realized</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between"><span class="eyebrow">Units Sold</span><i class="bi bi-bag kpi-icon"></i></div>
+                <p class="kpi-value">{{ units_sold }}</p>
+                <p class="kpi-sub mb-0">Delivered product units</p>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card-v kpi h-100 p-3">
+                <div class="d-flex justify-content-between"><span class="eyebrow">Low Stock Alerts</span><i class="bi bi-exclamation-triangle kpi-icon"></i></div>
+                <p class="kpi-value">{{ low_stock_count }}</p>
+                <p class="kpi-sub mb-0">Items needing replenishment</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seller Products Inventory -->
+    <div class="card-v flush mb-4 table-scroll">
+        <div class="d-flex justify-content-between align-items-center px-4 pt-4 pb-2">
+            <h2 class="h5 mb-0"><i class="bi bi-boxes me-2"></i>Store Products Catalog</h2>
+            <span class="text-smoke small">{{ product_count }} listed</span>
+        </div>
+        <table class="table-v mt-2">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td>
+                        <a href="{% url 'products:detail' p.pk %}" class="fw-semibold text-ink text-decoration-none">
+                            {{ p.title }}
+                        </a>
+                    </td>
+                    <td><span class="text-smoke">{{ p.category.name|default:"Uncategorized" }}</span></td>
+                    <td class="fw-bold">${{ p.price }}</td>
+                    <td>
+                        {% if p.is_out_of_stock %}
+                        <span class="badge bg-danger-subtle text-danger">Out of stock</span>
+                        {% elif p.is_low_stock %}
+                        <span class="badge bg-warning-subtle text-warning-emphasis">{{ p.stock }} (Low)</span>
+                        {% else %}
+                        <span>{{ p.stock }}</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="pill pill-status-{{ p.status }}">{{ p.get_status_display }}</span></td>
+                    <td class="text-end">
+                        <a href="{% url 'products:detail' p.pk %}" class="btn btn-sm btn-outline-ink rounded-pill px-3">View</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-smoke py-4">This seller has not uploaded any products yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Seller Recent Order Items -->
+    <div class="card-v flush mb-4 table-scroll">
+        <div class="d-flex justify-content-between align-items-center px-4 pt-4 pb-2">
+            <h2 class="h5 mb-0"><i class="bi bi-receipt me-2"></i>Fulfilled Order Lines</h2>
+            <span class="text-smoke small">Recent items sold</span>
+        </div>
+        <table class="table-v mt-2">
+            <thead>
+                <tr>
+                    <th>Order Ref</th>
+                    <th>Date</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Line Total</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order_items %}
+                <tr>
+                    <td class="fw-bold">{{ item.order.reference }}</td>
+                    <td class="text-smoke">{{ item.order.created_at|date:"M j, Y" }}</td>
+                    <td>{{ item.title }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td class="fw-bold">${{ item.line_total }}</td>
+                    <td><span class="pill pill-{{ item.order.status }}">{{ item.order.get_status_display }}</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-smoke py-4">No order items fulfilled by this seller yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% elif is_admin %}
+    <!-- ADMINISTRATOR PROFILE SPECIFICS -->
+    <div class="card-v p-4 mb-4">
+        <h2 class="h5 mb-3"><i class="bi bi-shield-lock me-2" style="color:var(--flame)"></i>Administrator Access &amp; Privileges</h2>
+        <p class="text-smoke small mb-4">This account holds operational control over the marketplace, user access, catalog moderation, orders, and financial reports.</p>
+        <div class="row g-3">
+            <div class="col-sm-6 col-md-4">
+                <div class="p-3 bg-cream rounded-3">
+                    <span class="eyebrow d-block mb-1">Superuser Privileges</span>
+                    <span class="fw-bold fs-6">{% if target.is_superuser %}Full Unrestricted Access{% else %}Standard Staff Admin{% endif %}</span>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-4">
+                <div class="p-3 bg-cream rounded-3">
+                    <span class="eyebrow d-block mb-1">Staff Status</span>
+                    <span class="fw-bold fs-6">{% if target.is_staff %}Active Staff Member{% else %}Standard User{% endif %}</span>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-4">
+                <div class="p-3 bg-cream rounded-3">
+                    <span class="eyebrow d-block mb-1">System Role</span>
+                    <span class="fw-bold fs-6 text-danger"><i class="bi bi-shield-check me-1"></i>ADMIN</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
